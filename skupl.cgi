@@ -26,8 +26,11 @@ use constant SKU_PNL_SELECT_STATEMENT => qq(
            ,ifnull(last_onhand_inventory_report.quantity, 0) quantity
            ,count(distinct so.source_order_id      ) order_count
            ,sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) unit_count
-           ,sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) / (?/7)  weekly_velocity
-           ,ifnull(last_onhand_inventory_report.quantity, 0) / (sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) / (?/7)) woc
+           ,sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
+                   ((case when datediff(NOW(),min(order_datetime)) > ? then ? else datediff(NOW(),min(order_datetime)) end)/ 7) weekly_velocity
+           ,ifnull(last_onhand_inventory_report.quantity, 0) /
+                   (sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
+                   ((case when datediff(NOW(),min(order_datetime)) > ? then ? else datediff(NOW(),min(order_datetime)) end)/7)) woc
            ,sum(so.product_sales                   ) product_sales
            ,sum(shipping_credits                   ) +
                  sum(gift_wrap_credits                  ) +
@@ -76,7 +79,7 @@ use constant SKU_PNL_SELECT_STATEMENT => qq(
 
 my $dbh ;
 my $cgi = CGI->new() ;
-my $days = $cgi->param('days') || 180 ;
+my $days = $cgi->param('days') || 90 ;
 
 print $cgi->header;
 print $cgi->start_html( -title => "MKP Products SKU Performance", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );
@@ -87,7 +90,7 @@ $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
                     {'RaiseError' => 1});
 
 my $s_sth = $dbh->prepare(${\SKU_PNL_SELECT_STATEMENT}) ;
-$s_sth->execute($days, $days, $days) or die $DBI::errstr ;
+$s_sth->execute($days, $days, $days, $days, $days) or die $DBI::errstr ;
 print "<TABLE id=\"pnl\">"           .
       "<TBODY><TR>"                  .
       "<TH onclick=\"sortTable(0)\" style=\"cursor:pointer\">Ordest Order</TH>"        .

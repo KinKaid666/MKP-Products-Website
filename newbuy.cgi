@@ -22,8 +22,11 @@ use constant SKU_OHI_SELECT_STATEMENT => qq(
            ,sc.cost cost
            ,count(distinct so.source_order_id      ) order_count
            ,sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) unit_count
-           ,sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) / (?/7)  weekly_velocity
-           ,ifnull(last_onhand_inventory_report.quantity, 0) / (sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) / (?/7)) woc
+           ,sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
+                   ((case when datediff(NOW(),min(order_datetime)) > ? then ? else datediff(NOW(),min(order_datetime)) end)/ 7) weekly_velocity
+           ,ifnull(last_onhand_inventory_report.quantity, 0) /
+                   (sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
+                   ((case when datediff(NOW(),min(order_datetime)) > ? then ? else datediff(NOW(),min(order_datetime)) end)/7)) woc
            ,sum(so.product_sales                   ) product_sales
            ,sum(shipping_credits                   ) +
                  sum(gift_wrap_credits                  ) +
@@ -72,7 +75,7 @@ use constant SKU_OHI_SELECT_STATEMENT => qq(
 ) ;
 
 my $cgi = CGI->new() ;
-my $days = $cgi->param('days') || 180 ;
+my $days = $cgi->param('days') || 90 ;
 my $woc = $cgi->param('woc') || 6 ;
 my $buy_amount = $cgi->param('buy_amount') || 2500 ;
 my $dbh ;
@@ -121,15 +124,15 @@ print $cgi->Tr(
                                    -value    => 'Submit',
                                    -onsubmit => 'javascript: validate_form()')),
       );
-print $cgi->end_table;
-print $cgi->end_form;
+print $cgi->end_table() ;
+print $cgi->end_form() ;
 $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
                     "ericferg_ro",
                     "ericferg_ro_2018",
                     {'RaiseError' => 1});
 
 my $ohi_sth = $dbh->prepare(${\SKU_OHI_SELECT_STATEMENT}) ;
-$ohi_sth->execute($days, $days, $days) or die $DBI::errstr ;
+$ohi_sth->execute($days, $days, $days, $days, $days) or die $DBI::errstr ;
 
 print "<BR><TABLE id=\"pnl\">" .
       "<TBODY><TR>"            .

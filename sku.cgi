@@ -84,8 +84,11 @@ use constant SKU_OHI_SELECT_STATEMENT => qq(
            ,ifnull(last_onhand_inventory_report.quantity, 0) quantity
            ,count(distinct so.source_order_id      ) order_count
            ,sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) unit_count
-           ,sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) / (?/7)  weekly_velocity
-           ,ifnull(last_onhand_inventory_report.quantity, 0) / (sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) / (?/7)) woc
+           ,sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
+                   ((case when datediff(NOW(),min(order_datetime)) > ? then ? else datediff(NOW(),min(order_datetime)) end)/ 7) weekly_velocity
+           ,ifnull(last_onhand_inventory_report.quantity, 0) /
+                (sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
+                     ((case when datediff(NOW(),min(order_datetime)) > ? then ? else datediff(NOW(),min(order_datetime)) end)/7)) woc
            ,sum(so.product_sales                   ) product_sales
            ,sum(shipping_credits                   ) +
                  sum(gift_wrap_credits                  ) +
@@ -156,7 +159,7 @@ use constant SKU_ORDER_DETAILS_SELECT_STATEMENT => qq(
 
 my $cgi = CGI->new() ;
 my $sku = $cgi->param('SKU') || 'MKP-F5117-4' ;
-my $days = $cgi->param('days') || 180 ;
+my $days = $cgi->param('days') || 90 ;
 print $cgi->header;
 print $cgi->start_html( -title => "MKP Products SKU Details", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );
 my $dbh ;
@@ -209,7 +212,7 @@ print "</TABLE>\n" ;
 $sku_cost_sth->finish() ;
 
 my $ohi_sth = $dbh->prepare(${\SKU_OHI_SELECT_STATEMENT}) ;
-$ohi_sth->execute($days, $days, $days, $sku) or die $DBI::errstr ;
+$ohi_sth->execute($days, $days, $days, $days, $days, $sku) or die $DBI::errstr ;
 print "<h3>Inventory</h3>\n" ;
 print "<TABLE id=\"pnl\">"           .
       "<TBODY><TR>"                  .
