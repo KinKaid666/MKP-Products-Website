@@ -4,6 +4,7 @@ use strict ;
 use warnings ;
 use DBI ;
 use CGI ;
+use CGI::Carp qw(fatalsToBrowser); # Remove this in production
 use POSIX ;
 use Locale::Currency::Format ;
 
@@ -156,30 +157,14 @@ use constant SKU_ORDER_DETAILS_SELECT_STATEMENT => qq(
 my $cgi = CGI->new() ;
 my $sku = $cgi->param('SKU') || 'MKP-F5117-4' ;
 my $days = $cgi->param('days') || 180 ;
+print $cgi->header;
+print $cgi->start_html( -title => "MKP Products SKU Details", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );
 my $dbh ;
 
 $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
                     "ericferg_ro",
                     "ericferg_ro_2018",
                     {'RaiseError' => 1});
-
-print "Content-type: text/html\n\n";
-print "<head><style>
-table, th, tr, td {border:1px solid black; white-space:nowrap}
-
-tr:nth-child(odd)   {background-color:#f1f1f1;}
-tr:nth-child(even)  {background-color:#ffffff;}
-
-td.string {text-align:left; }
-td.number {text-align:right; }
-td.number-neg {text-align:right; color:#FF0000;}
-
-#green { background-color:#00FF00; }
-#amber { background-color:#ffff00; }
-#red   { background-color:#ff3300; }
-pre { display: block; font-family: monospace; }
-</head></style>
-" ;
 
 print "<h3>SKU</h3>\n" ;
 print "<TABLE><TR>"          .
@@ -281,9 +266,17 @@ print "<TABLE><TR>"                  .
       "<TH>Unit Count</TH>"          .
       "<TH>Sales</TH>"               .
       "<TH>Selling Fees</TH>"        .
+      "<TH>per Unit</TH>"            .
+      "<TH>as Pct</TH>"              .
       "<TH>FBA Fees</TH>"            .
+      "<TH>per Unit</TH>"            .
+      "<TH>as Pct</TH>"              .
       "<TH>Cogs</TH>"                .
+      "<TH>per Unit</TH>"            .
+      "<TH>as Pct</TH>"              .
       "<TH>Contribution Margin</TH>" .
+      "<TH>per Unit</TH>"            .
+      "<TH>as Pct</TH>"              .
       "</TR> \n" ;
 my $pnl_sth = $dbh->prepare(${\SKU_PNL_SELECT_STATEMENT}) ;
 $pnl_sth->execute($sku) or die $DBI::errstr ;
@@ -295,12 +288,38 @@ while (my $ref = $pnl_sth->fetchrow_hashref())
     print "<TD class=string><a href=https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=$ref->{sku}>$ref->{sku}</a></TD>" ;
     print "<TD class=number>" . &format_integer($ref->{order_count})     . "</TD>" ;
     print "<TD class=number>" . &format_integer($ref->{unit_count})      . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{product_sales})       . ">" . &format_currency($ref->{product_sales},2)  . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{selling_fees})        . ">" . &format_currency($ref->{selling_fees},2)   . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{fba_fees})            . ">" . &format_currency($ref->{fba_fees},2)       . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{cogs})                . ">" . &format_currency($ref->{cogs},2)           . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{contrib_margin})      . ">" . &format_currency($ref->{contrib_margin},2) . "</TD>" ;
-    print "</TR>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{product_sales})       . ">" . &format_currency($ref->{product_sales})    . "</TD>\n" ;
+    if($ref->{product_sales} == 0 or $ref->{unit_count} == 0)
+    {
+        print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_currency($ref->{selling_fees})   . "</TD>\n" ;
+        print "<TD class=number>NaN</TD>\n" ;
+        print "<TD class=number>NaN</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{fba_fees})          . ">" . &format_currency($ref->{fba_fees})       . "</TD>\n" ;
+        print "<TD class=number>NaN</TD>\n" ;
+        print "<TD class=number>NaN</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{cogs})              . ">" . &format_currency($ref->{cogs})           . "</TD>\n" ;
+        print "<TD class=number>NaN</TD>\n" ;
+        print "<TD class=number>NaN</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{contrib_margin})    . ">" . &format_currency($ref->{contrib_margin}) . "</TD>\n" ;
+        print "<TD class=number>NaN</TD>\n" ;
+        print "<TD class=number>NaN</TD>\n" ;
+    }
+    else
+    {
+        print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_currency($ref->{selling_fees})                            . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_currency($ref->{selling_fees}/$ref->{unit_count},2)       . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_percent($ref->{selling_fees}/$ref->{product_sales},1)     . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{fba_fees})          . ">" . &format_currency($ref->{fba_fees})                                . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{fba_fees})          . ">" . &format_currency($ref->{fba_fees}/$ref->{unit_count},2)           . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{fba_fees})          . ">" . &format_percent($ref->{fba_fees}/$ref->{product_sales},1)         . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{cogs})              . ">" . &format_currency($ref->{cogs})                                    . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{cogs})              . ">" . &format_currency($ref->{cogs}/$ref->{unit_count},2)               . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{cogs})              . ">" . &format_percent($ref->{cogs}/$ref->{product_sales},1)             . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{contrib_margin})    . ">" . &format_currency($ref->{contrib_margin})                          . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{contrib_margin})    . ">" . &format_currency($ref->{contrib_margin}/$ref->{unit_count},2)     . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{contrib_margin})    . ">" . &format_percent($ref->{contrib_margin}/$ref->{product_sales},1)   . "</TD>\n" ;
+    }
+
 }
 print "</TABLE>\n" ;
 $pnl_sth->finish() ;

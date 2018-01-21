@@ -1,0 +1,14 @@
+table, th, tr, td {border:1px solid black; white-space:nowrap}
+
+tr:nth-child(odd)   {background-color:#f1f1f1;}
+tr:nth-child(even)  {background-color:#ffffff;}
+
+td.string {text-align:left; }
+td.number {text-align:right; }
+td.number-neg {text-align:right; color:#FF0000;}
+
+#green { background-color:#00FF00; }
+#amber { background-color:#ffff00; }
+#red   { background-color:#ff3300; }
+pre { display: block; font-family: monospace; }
+

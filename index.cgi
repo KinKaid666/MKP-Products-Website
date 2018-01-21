@@ -4,6 +4,7 @@ use strict ;
 use warnings ;
 use DBI ;
 use CGI ;
+use CGI::Carp qw(fatalsToBrowser); # Remove this in production
 use POSIX ;
 use Locale::Currency::Format ;
 
@@ -72,8 +73,11 @@ use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
      order by year, month
 ) ;
 
-my $dbh ;
+my $cgi = CGI->new() ;
+print $cgi->header;
+print $cgi->start_html( -title => "MKP Products P&L", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );
 
+my $dbh ;
 $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
                     "ericferg_ro",
                     "ericferg_ro_2018",
@@ -81,23 +85,6 @@ $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
 
 my $s_sth = $dbh->prepare(${\MONTHLY_PNL_SELECT_STATEMENT}) ;
 $s_sth->execute() or die $DBI::errstr ;
-print "Content-type: text/html\n\n";
-print "<head><style>
-table, th, tr, td {border:1px solid black; white-space:nowrap}
-
-tr:nth-child(odd)   {background-color:#f1f1f1;}
-tr:nth-child(even)  {background-color:#ffffff;}
-
-td.string {text-align:left; }
-td.number {text-align:right; }
-td.number-neg {text-align:right; color: #FF0000;}
-
-#green { background-color:#00FF00; }
-#amber { background-color:#ffff00; }
-#red   { background-color:#ff3300; }
-pre { display: block; font-family: monospace; }
-</head></style>
-" ;
 print "<TABLE><TR>"           .
       "<TH>Year</TH>"         .
       "<TH>Month</TH>"        .
