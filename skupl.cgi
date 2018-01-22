@@ -174,7 +174,7 @@ function sortTable(n) {
   table = document.getElementById("pnl");
   switching = true;
   // Set the sorting direction to ascending:
-  dir = "asc";
+  dir = "desc";
   /* Make a loop that will continue until
   no switching has been done: */
   while (switching) {
