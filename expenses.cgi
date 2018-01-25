@@ -28,13 +28,12 @@ use constant EXPENSES_SELECT_STATEMENT => qq(
               ,description
      order by year(expense_datetime)
               ,month(expense_datetime)
-              ,type
-              ,description
+              ,total
 ) ;
 
 my $cgi = CGI->new() ;
-my $year = 0 + $cgi->param('YEAR') ;
-my $month = 0 + $cgi->param('MONTH') ;
+my $year = $cgi->param('YEAR') || undef ;
+my $month = $cgi->param('MONTH') || undef ;
 print $cgi->header;
 print $cgi->start_html( -title => "MKP Products Expenses Details", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );
 
@@ -48,13 +47,14 @@ my $expenses_sth = $dbh->prepare(${\EXPENSES_SELECT_STATEMENT}) ;
 $expenses_sth->execute($year,$month) or die $DBI::errstr ;
 
 print "<TABLE><TR>"                  .
-      "<TH>Year $year</TH>"          .
-      "<TH>Month$month</TH>"         .
+      "<TH>Year</TH>"                .
+      "<TH>Month</TH>"               .
       "<TH>Category</TH>"            .
       "<TH>Expense Type</TH>"        .
       "<TH>Expense Description</TH>" .
       "<TH>Expenses</TH>"            .
       "</TR> \n" ;
+my $expenses = 0 ;
 while (my $ref = $expenses_sth->fetchrow_hashref())
 {
     print "<TR>" ;
@@ -65,7 +65,11 @@ while (my $ref = $expenses_sth->fetchrow_hashref())
     print "<TD class=string>$ref->{description}</TD>" ;
     print "<TD class=number" . &add_neg_tag($ref->{total})   . ">" . &format_currency($ref->{total},2)  . "</TD>" ;
     print "</TR>" ;
+    $expenses += $ref->{total} ;
 }
+print "<TR><TD colspan=\"5\"><strong>Total</strong></TD>" ;
+print "<TD class=number" . &add_neg_tag($expenses)   . "><strong>" . &format_currency($expenses,2)  . "</strong></TD>" ;
+print "</TR>\n" ;
 print "</TABLE>\n" ;
 $expenses_sth->finish() ;
 
