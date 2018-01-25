@@ -20,8 +20,7 @@ use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
            , product_sales
            , (shipping_credits + gift_wrap_credits + promotional_rebates + sales_tax_collected + marketplace_facilitator_tax + transaction_fees + other + selling_fees) selling_fees
            , fba_fees
-           , cogs
-           , ifnull(expenses_by_month.expenses,0) expenses
+           , cogs , ifnull(expenses_by_month.expenses,0) expenses
            , ifnull(sga_by_month.expenses,0) sga
            , (product_sales + shipping_credits + gift_wrap_credits + promotional_rebates + sales_tax_collected + marketplace_facilitator_tax + transaction_fees + other + selling_fees + fba_fees + cogs + ifnull(expenses_by_month.expenses,0) + ifnull(sga_by_month.expenses,0) ) net_income
       from ( select date_format(so.order_datetime,"%Y") year
@@ -127,10 +126,10 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "<TD class=number" . &add_neg_tag($ref->{cogs})          . ">" . &format_currency($ref->{cogs})                                . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{cogs})          . ">" . &format_currency($ref->{cogs}/$ref->{unit_count},2)           . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{cogs})          . ">" . &format_percent($ref->{cogs}/$ref->{product_sales},1)         . "</TD>\n" ;
-    print "<TD class=number" . &add_neg_tag($ref->{expenses})      . ">" . &format_currency($ref->{expenses})                            . "</TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{expenses})      . ">" . "<a href=expenses.cgi?YEAR=$ref->{year}\&MONTH=$ref->{month}>" . &format_currency($ref->{expenses}) . "</a></TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{expenses})      . ">" . &format_currency($ref->{expenses}/$ref->{unit_count},2)       . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{expenses})      . ">" . &format_percent($ref->{expenses}/$ref->{product_sales},1)     . "</TD>\n" ;
-    print "<TD class=number" . &add_neg_tag($ref->{sga})           . ">" . &format_currency($ref->{sga})                                 . "</TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{sga})           . ">" . "<a href=expenses.cgi?YEAR=$ref->{year}\&MONTH=$ref->{month}>" . &format_currency($ref->{sga})      . "</a></TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{sga})           . ">" . &format_currency($ref->{sga}/$ref->{unit_count},2)            . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{sga})           . ">" . &format_percent($ref->{sga}/$ref->{product_sales},1)          . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{net_income})    . ">" . &format_currency($ref->{net_income})                          . "</TD>\n" ;
