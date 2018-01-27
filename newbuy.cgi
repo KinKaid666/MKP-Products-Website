@@ -11,7 +11,7 @@ use Locale::Currency::Format ;
 # AMZL Specific Libraries
 use lib "/home/ericferg/mkp/bin/lib" ;
 use MKPFormatter ;
-user MKPUser ;
+use MKPUser ;
 
 use constant SKU_OHI_SELECT_STATEMENT => qq(
     select min(order_datetime) oldest_order
