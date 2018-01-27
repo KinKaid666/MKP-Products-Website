@@ -11,6 +11,7 @@ use Locale::Currency::Format ;
 # AMZL Specific Libraries
 use lib "/home/ericferg/mkp/bin/lib" ;
 use MKPFormatter ;
+use MKPUser ;
 
 use constant SKU_DETAILS_SELECT_STATEMENT => qq(
     select s.sku
@@ -157,6 +158,7 @@ use constant SKU_ORDER_DETAILS_SELECT_STATEMENT => qq(
      order by so.order_datetime
 ) ;
 
+my $username = &validate() ;
 my $cgi = CGI->new() ;
 my $sku = $cgi->param('SKU') || 'MKP-F5117-4' ;
 my $days = $cgi->param('days') || 90 ;
@@ -165,8 +167,8 @@ print $cgi->start_html( -title => "MKP Products SKU Details", -style => {'src'=>
 my $dbh ;
 
 $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
-                    "ericferg_ro",
-                    "ericferg_ro_2018",
+                    "mkp_reporter",
+                    "mkp_reporter_2018",
                     {'RaiseError' => 1});
 
 print "<h3>SKU</h3>\n" ;
@@ -268,6 +270,7 @@ print "<TABLE><TR>"                  .
       "<TH>Order Count</TH>"         .
       "<TH>Unit Count</TH>"          .
       "<TH>Sales</TH>"               .
+      "<TH>per Unit</TH>"            .
       "<TH>Selling Fees</TH>"        .
       "<TH>per Unit</TH>"            .
       "<TH>as Pct</TH>"              .
@@ -294,6 +297,7 @@ while (my $ref = $pnl_sth->fetchrow_hashref())
     print "<TD class=number" . &add_neg_tag($ref->{product_sales})       . ">" . &format_currency($ref->{product_sales})    . "</TD>\n" ;
     if($ref->{product_sales} == 0 or $ref->{unit_count} == 0)
     {
+        print "<TD class=number>NaN</TD>\n" ;
         print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_currency($ref->{selling_fees})   . "</TD>\n" ;
         print "<TD class=number>NaN</TD>\n" ;
         print "<TD class=number>NaN</TD>\n" ;
@@ -309,6 +313,7 @@ while (my $ref = $pnl_sth->fetchrow_hashref())
     }
     else
     {
+        print "<TD class=number" . &add_neg_tag($ref->{product_sales})     . ">" . &format_currency($ref->{product_sales}/$ref->{unit_count},2)      . "</TD>\n" ;
         print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_currency($ref->{selling_fees})                            . "</TD>\n" ;
         print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_currency($ref->{selling_fees}/$ref->{unit_count},2)       . "</TD>\n" ;
         print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_percent($ref->{selling_fees}/$ref->{product_sales},1)     . "</TD>\n" ;

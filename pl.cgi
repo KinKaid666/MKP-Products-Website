@@ -11,6 +11,7 @@ use Locale::Currency::Format ;
 # AMZL Specific Libraries
 use lib "/home/ericferg/mkp/bin/lib" ;
 use MKPFormatter ;
+use MKPUser ;
 
 use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
     select sku_activity_by_month.year
@@ -72,14 +73,15 @@ use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
      order by year, month
 ) ;
 
+my $username = &validate() ;
 my $cgi = CGI->new() ;
 print $cgi->header;
 print $cgi->start_html( -title => "MKP Products P&L", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );
 
 my $dbh ;
 $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
-                    "ericferg_ro",
-                    "ericferg_ro_2018",
+                    "mkp_reporter",
+                    "mkp_reporter_2018",
                     {'RaiseError' => 1});
 
 my $s_sth = $dbh->prepare(${\MONTHLY_PNL_SELECT_STATEMENT}) ;
@@ -90,24 +92,25 @@ print "<TABLE><TR>"           .
       "<TH>Order Count</TH>"  .
       "<TH>Unit Count</TH>"   .
       "<TH>Sales</TH>"        .
+      "<TH>per Unit</TH>"     .
       "<TH>Selling Fees</TH>" .
-      "<TH>per Unit</TH>"        .
-      "<TH>as Pct</TH>"        .
+      "<TH>per Unit</TH>"     .
+      "<TH>as Pct</TH>"       .
       "<TH>FBA Fees</TH>"     .
-      "<TH>per Unit</TH>"        .
-      "<TH>as Pct</TH>"        .
+      "<TH>per Unit</TH>"     .
+      "<TH>as Pct</TH>"       .
       "<TH>Cogs</TH>"         .
-      "<TH>per Unit</TH>"        .
-      "<TH>as Pct</TH>"        .
+      "<TH>per Unit</TH>"     .
+      "<TH>as Pct</TH>"       .
       "<TH>Expenses</TH>"     .
-      "<TH>per Unit</TH>"        .
-      "<TH>as Pct</TH>"        .
+      "<TH>per Unit</TH>"     .
+      "<TH>as Pct</TH>"       .
       "<TH>SG&A</TH>"         .
-      "<TH>per Unit</TH>"        .
-      "<TH>as Pct</TH>"        .
+      "<TH>per Unit</TH>"     .
+      "<TH>as Pct</TH>"       .
       "<TH>Net Income</TH>"   .
-      "<TH>per Unit</TH>"        .
-      "<TH>as Pct</TH>"        .
+      "<TH>per Unit</TH>"     .
+      "<TH>as Pct</TH>"       .
       "</TR> \n" ;
 while (my $ref = $s_sth->fetchrow_hashref())
 {
@@ -117,6 +120,7 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "<TD class=number>" . &format_integer($ref->{order_count}) . "</TD>\n" ;
     print "<TD class=number>" . &format_integer($ref->{unit_count})  . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{product_sales}) . ">" . &format_currency($ref->{product_sales})                       . "</TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{product_sales}) . ">" . &format_currency($ref->{product_sales}/$ref->{unit_count},2)  . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{selling_fees})  . ">" . &format_currency($ref->{selling_fees})                        . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{selling_fees})  . ">" . &format_currency($ref->{selling_fees}/$ref->{unit_count},2)   . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{selling_fees})  . ">" . &format_percent($ref->{selling_fees}/$ref->{product_sales},1) . "</TD>\n" ;

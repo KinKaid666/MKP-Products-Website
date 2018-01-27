@@ -17,10 +17,12 @@ use constant WOC_ID_AMBER => 4 ;
 # AMZL Specific Libraries
 use lib "/home/ericferg/mkp/bin/lib" ;
 use MKPFormatter ;
+use MKPUser ;
 
 use constant SKU_PNL_SELECT_STATEMENT => qq(
     select min(order_datetime) oldest_order
            ,so.sku
+           ,ifnull(acts.active,0) is_active
            ,ifnull(last_onhand_inventory_report.source_name, "N/A") source_name
            ,ifnull(last_onhand_inventory_report.condition_name, "N/A") condition_name
            ,ifnull(last_onhand_inventory_report.quantity, 0) quantity
@@ -59,6 +61,8 @@ use constant SKU_PNL_SELECT_STATEMENT => qq(
        and sc.start_date < so.order_datetime
        and (sc.end_date is null or
             sc.end_date > so.order_datetime)
+      left outer join active_sources acts
+        on acts.sku = so.sku
       left outer join (
             select ohi.sku
                    ,ohi.report_date
@@ -78,46 +82,83 @@ use constant SKU_PNL_SELECT_STATEMENT => qq(
 ) ;
 
 my $dbh ;
+my $username = &validate() ;
 my $cgi = CGI->new() ;
 my $days = $cgi->param('days') || 90 ;
+my $show_active = $cgi->param('show_active') ;
+
 
 print $cgi->header;
 print $cgi->start_html( -title => "MKP Products SKU Performance", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );
+print $cgi->start_form(
+    -name    => 'main_form',
+    -method  => 'POST',
+    -enctype => &CGI::URL_ENCODED,
+    -onsubmit => 'return javascript:validation_function()',
+);
+print $cgi->start_table ;
+print $cgi->Tr(
+            $cgi->td({ -class => "string" },
+                     "Days of History:"),
+            $cgi->td({ -class => "number" },
+                     $cgi->textfield( -name      => 'days',
+                                      -value     => $days,
+                                      -size      => 20,
+                                      -maxlength => 30,))
+      ) ;
+print $cgi->Tr(
+            $cgi->td({ -class => "string" },
+                     "Settings:"),
+            $cgi->td($cgi->checkbox( -name      => 'show_active',
+                                     -checked   => $show_active,
+                                     -label     => "Show only active"))
+      ) ;
+print $cgi->Tr(
+            $cgi->td(),
+            $cgi->td($cgi->submit( -name     => 'submit_form',
+                                   -value    => 'Submit',
+                                   -onsubmit => 'javascript: validate_form()')),
+      );
+print $cgi->end_table() ;
+print $cgi->end_form() ;
+
 
 $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
-                    "ericferg_ro",
-                    "ericferg_ro_2018",
+                    "mkp_reporter",
+                    "mkp_reporter_2018",
                     {'RaiseError' => 1});
 
 my $s_sth = $dbh->prepare(${\SKU_PNL_SELECT_STATEMENT}) ;
 $s_sth->execute($days, $days, $days, $days, $days) or die $DBI::errstr ;
 print "<TABLE id=\"pnl\">"           .
       "<TBODY><TR>"                  .
-      "<TH onclick=\"sortTable(0)\" style=\"cursor:pointer\">Ordest Order</TH>"        .
-      "<TH onclick=\"sortTable(1)\" style=\"cursor:pointer\">SKU</TH>"                 .
-      "<TH onclick=\"sortTable(2)\" style=\"cursor:pointer\">Source of Inventory</TH>" .
-      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">Condition</TH>"           .
-      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">On Hand Quantity</TH>"    .
-      "<TH onclick=\"sortTable(5)\" style=\"cursor:pointer\">Order Count</TH>"         .
-      "<TH onclick=\"sortTable(6)\" style=\"cursor:pointer\">Unit Count</TH>"          .
-      "<TH onclick=\"sortTable(7)\" style=\"cursor:pointer\">Weekly Velocity</TH>"     .
-      "<TH onclick=\"sortTable(8)\" style=\"cursor:pointer\">Weeks of Coverage</TH>"   .
-      "<TH onclick=\"sortTable(9)\" style=\"cursor:pointer\">Sales</TH>"               .
-      "<TH onclick=\"sortTable(10)\" style=\"cursor:pointer\">Selling Fees</TH>"        .
-      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">per Unit</TH>"            .
-      "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">as Pct</TH>"            .
-      "<TH onclick=\"sortTable(13)\" style=\"cursor:pointer\">FBA Fees</TH>"            .
-      "<TH onclick=\"sortTable(14)\" style=\"cursor:pointer\">per Unit</TH>"            .
-      "<TH onclick=\"sortTable(15)\" style=\"cursor:pointer\">as Pct</TH>"            .
-      "<TH onclick=\"sortTable(16)\" style=\"cursor:pointer\">Cogs</TH>"                .
-      "<TH onclick=\"sortTable(17)\" style=\"cursor:pointer\">per Unit</TH>"            .
-      "<TH onclick=\"sortTable(18)\" style=\"cursor:pointer\">as Pct</TH>"            .
-      "<TH onclick=\"sortTable(19)\" style=\"cursor:pointer\">Contribution Margin</TH>" .
-      "<TH onclick=\"sortTable(20)\" style=\"cursor:pointer\">per Unit</TH>"            .
-      "<TH onclick=\"sortTable(21)\" style=\"cursor:pointer\">as Pct</TH>"            .
+      "<TH onclick=\"sortTable(0)\" style=\"cursor:pointer\">Ordest Order</TH>"         .
+      "<TH onclick=\"sortTable(1)\" style=\"cursor:pointer\">SKU</TH>"                  .
+      "<TH onclick=\"sortTable(2)\" style=\"cursor:pointer\">Source of Inventory</TH>"  .
+      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">Condition</TH>"            .
+      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">On Hand Quantity</TH>"     .
+      "<TH onclick=\"sortTable(5)\" style=\"cursor:pointer\">Order Count</TH>"          .
+      "<TH onclick=\"sortTable(6)\" style=\"cursor:pointer\">Unit Count</TH>"           .
+      "<TH onclick=\"sortTable(7)\" style=\"cursor:pointer\">Weekly Velocity</TH>"      .
+      "<TH onclick=\"sortTable(8)\" style=\"cursor:pointer\">Weeks of Coverage</TH>"    .
+      "<TH onclick=\"sortTable(9)\" style=\"cursor:pointer\">Sales</TH>"                .
+      "<TH onclick=\"sortTable(10)\" style=\"cursor:pointer\">per Unit</TH>"            .
+      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">Selling Fees</TH>"        .
+      "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">per Unit</TH>"            .
+      "<TH onclick=\"sortTable(13)\" style=\"cursor:pointer\">as Pct</TH>"              .
+      "<TH onclick=\"sortTable(14)\" style=\"cursor:pointer\">FBA Fees</TH>"            .
+      "<TH onclick=\"sortTable(15)\" style=\"cursor:pointer\">per Unit</TH>"            .
+      "<TH onclick=\"sortTable(16)\" style=\"cursor:pointer\">as Pct</TH>"              .
+      "<TH onclick=\"sortTable(17)\" style=\"cursor:pointer\">Cogs</TH>"                .
+      "<TH onclick=\"sortTable(18)\" style=\"cursor:pointer\">per Unit</TH>"            .
+      "<TH onclick=\"sortTable(19)\" style=\"cursor:pointer\">as Pct</TH>"              .
+      "<TH onclick=\"sortTable(20)\" style=\"cursor:pointer\">Contribution Margin</TH>" .
+      "<TH onclick=\"sortTable(21)\" style=\"cursor:pointer\">per Unit</TH>"            .
+      "<TH onclick=\"sortTable(22)\" style=\"cursor:pointer\">as Pct</TH>"              .
       "</TR>\n" ;
 while (my $ref = $s_sth->fetchrow_hashref())
 {
+    next if ($show_active and not $ref->{is_active}) ;
     print "<TR>" ;
     print "<TD class=string>$ref->{oldest_order}</TD>" ;
     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
@@ -138,6 +179,7 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "<TD class=number" . &add_neg_tag($ref->{product_sales})     . ">" . &format_currency($ref->{product_sales})                           . "</TD>\n" ;
     if($ref->{product_sales} == 0 or $ref->{unit_count} == 0)
     {
+        print "<TD class=number>NaN</TD>\n" ;
         print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_currency($ref->{selling_fees})                            . "</TD>\n" ;
         print "<TD class=number>NaN</TD>\n" ;
         print "<TD class=number>NaN</TD>\n" ;
@@ -153,6 +195,7 @@ while (my $ref = $s_sth->fetchrow_hashref())
     }
     else
     {
+        print "<TD class=number" . &add_neg_tag($ref->{product_sales})     . ">" . &format_currency($ref->{product_sales}/$ref->{unit_count},2)      . "</TD>\n" ;
         print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_currency($ref->{selling_fees})                            . "</TD>\n" ;
         print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_currency($ref->{selling_fees}/$ref->{unit_count},2)       . "</TD>\n" ;
         print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_percent($ref->{selling_fees}/$ref->{product_sales},1)     . "</TD>\n" ;

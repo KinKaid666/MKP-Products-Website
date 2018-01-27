@@ -11,6 +11,7 @@ use Locale::Currency::Format ;
 # AMZL Specific Libraries
 use lib "/home/ericferg/mkp/bin/lib" ;
 use MKPFormatter ;
+user MKPUser ;
 
 use constant SKU_OHI_SELECT_STATEMENT => qq(
     select min(order_datetime) oldest_order
@@ -74,6 +75,7 @@ use constant SKU_OHI_SELECT_STATEMENT => qq(
      order by contrib_margin
 ) ;
 
+my $username = &validate() ;
 my $cgi = CGI->new() ;
 my $days = $cgi->param('days') || 90 ;
 my $woc = $cgi->param('woc') || 6 ;
@@ -127,8 +129,8 @@ print $cgi->Tr(
 print $cgi->end_table() ;
 print $cgi->end_form() ;
 $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
-                    "ericferg_ro",
-                    "ericferg_ro_2018",
+                    "mkp_reporter",
+                    "mkp_reporter_2018",
                     {'RaiseError' => 1});
 
 my $ohi_sth = $dbh->prepare(${\SKU_OHI_SELECT_STATEMENT}) ;

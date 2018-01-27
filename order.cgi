@@ -11,6 +11,7 @@ use Locale::Currency::Format ;
 # AMZL Specific Libraries
 use lib "/home/ericferg/mkp/bin/lib" ;
 use MKPFormatter ;
+user MKPUser ;
 
 use constant ORDER_PNL_SELECT_STATEMENT => qq(
     select date_format(so.order_datetime,"%Y") year
@@ -77,6 +78,7 @@ use constant ORDER_DETAILS_SELECT_STATEMENT => qq(
      order by so.order_datetime
 ) ;
 
+my $username = &validate() ;
 my $cgi = CGI->new() ;
 my $sku = $cgi->param('SOURCE_ORDER_ID') ;
 print $cgi->header;
@@ -84,8 +86,8 @@ print $cgi->start_html( -title => "MKP Products Order Details", -style => {'src'
 
 my $dbh ;
 $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
-                    "ericferg_ro",
-                    "ericferg_ro_2018",
+                    "mkp_reporter",
+                    "mkp_reporter_2018",
                     {'RaiseError' => 1});
 
 my $pnl_sth = $dbh->prepare(${\ORDER_PNL_SELECT_STATEMENT}) ;

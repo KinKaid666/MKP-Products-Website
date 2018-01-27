@@ -11,6 +11,7 @@ use Locale::Currency::Format ;
 # AMZL Specific Libraries
 use lib "/home/ericferg/mkp/bin/lib" ;
 use MKPFormatter ;
+user MKPUser ;
 
 use constant EXPENSES_SELECT_STATEMENT => qq(
     select year(expense_datetime) year
@@ -31,6 +32,7 @@ use constant EXPENSES_SELECT_STATEMENT => qq(
               ,total
 ) ;
 
+my $username = &validate() ;
 my $cgi = CGI->new() ;
 my $year = $cgi->param('YEAR') || undef ;
 my $month = $cgi->param('MONTH') || undef ;
@@ -39,8 +41,8 @@ print $cgi->start_html( -title => "MKP Products Expenses Details", -style => {'s
 
 my $dbh ;
 $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
-                    "ericferg_ro",
-                    "ericferg_ro_2018",
+                    "mkp_reporter",
+                    "mkp_reporter_2018",
                     {'RaiseError' => 1});
 
 my $expenses_sth = $dbh->prepare(${\EXPENSES_SELECT_STATEMENT}) ;

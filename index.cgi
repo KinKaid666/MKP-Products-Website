@@ -11,9 +11,11 @@ use Locale::Currency::Format ;
 # AMZL Specific Libraries
 use lib "/home/ericferg/mkp/bin/lib" ;
 use MKPFormatter ;
+use MKPUser ;
 
 my $cgi = CGI->new() ;
 
+my $username = &validate() ;
 my $sku   = $cgi->param('sku') || undef ;
 my $order = $cgi->param('order') || undef ;
 
@@ -59,3 +61,4 @@ print $cgi->Tr(
 print $cgi->end_table() ;
 print $cgi->end_form() ;
 print $cgi->end_html() ;
+
