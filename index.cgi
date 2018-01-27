@@ -27,7 +27,10 @@ print $cgi->start_html( -title => "MKP Products Homepage", -style => {'src'=>'ht
 
 print $cgi->a({href => "/pl.cgi"}, "Profit and Loss Statement") ;
 print $cgi->br() ;
-print $cgi->a({href => "/skupl.cgi"}, "SKU Performance Page" ) ;
+print $cgi->a({href => "/skupl.cgi"}, "SKU Performance" ) ;
+print $cgi->br() ;
+print $cgi->a({href => "/newbuy.cgi"}, "SKU Buying" ) ;
+print $cgi->br() ;
 print $cgi->br() ;
 
 print $cgi->start_form(
@@ -53,12 +56,9 @@ print $cgi->Tr(
                                       -size      => 20,
                                       -maxlength => 30,))
       ) ;
-print $cgi->Tr(
-            $cgi->td(),
-            $cgi->td($cgi->submit( -name     => 'submit_form',
-                                   -value    => 'Submit')),
-      );
 print $cgi->end_table() ;
+print $cgi->submit( -name     => 'submit_form',
+                    -value    => 'Submit') ;
 print $cgi->end_form() ;
 print $cgi->end_html() ;
 

@@ -44,6 +44,7 @@ if ($cgi->param('page')) {
    print $cgi->header(-cookie=>$cookie);
    print $cgi->start_html("Logged In");
    print qq(<h2>Welcome</h2>\nYou're logged in as <b>$username</b>!<br>\n);
+   print qq(<a href="index.cgi">homepage</a><br>\n);
    print qq(<a href="logout.cgi">log out</a><br>\n);
    print $cgi->end_html;
 }

@@ -11,7 +11,7 @@ use Locale::Currency::Format ;
 # AMZL Specific Libraries
 use lib "/home/ericferg/mkp/bin/lib" ;
 use MKPFormatter ;
-user MKPUser ;
+use MKPUser ;
 
 use constant ORDER_PNL_SELECT_STATEMENT => qq(
     select date_format(so.order_datetime,"%Y") year
@@ -111,7 +111,7 @@ while (my $ref = $pnl_sth->fetchrow_hashref())
     print "<TR>" ;
     print "<TD class=string>$ref->{year}</TD>" ;
     print "<TD class=string>$ref->{month}</TD>" ;
-    print "<TD class=string><a href=order.cgi?SOURCE_ORDER_ID=$ref->{source_order_id}>$ref->{source_order_id}</a></TD>" ;
+    print "<TD class=string><a href=https://sellercentral.amazon.com/hz/orders/details?_encoding=UTF8&orderId=$ref->{source_order_id}>$ref->{source_order_id}</a></TD>" ;
     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
     print "<TD class=number>" . &format_integer($ref->{order_count}) . "</TD>" ;
     print "<TD class=number>" . &format_integer($ref->{unit_count})  . "</TD>" ;
@@ -150,7 +150,7 @@ while (my $ref = $s_sth->fetchrow_hashref())
 {
     print "<TR>" ;
     print "<TD class=string>$ref->{order_datetime}</TD>" ;
-    print "<TD class=string><a href=order.cgi?SOURCE_ORDER_ID=$ref->{source_order_id}>$ref->{source_order_id}</a></TD>" ;
+    print "<TD class=string><a href=https://sellercentral.amazon.com/hz/orders/details?_encoding=UTF8&orderId=$ref->{source_order_id}>$ref->{source_order_id}</a></TD>" ;
     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
     print "<TD class=string>$ref->{type}</TD>" ;
     print "<TD class=number>" . &format_integer($ref->{quantity})                . "</TD>" ;
