@@ -25,7 +25,8 @@ print $cgi->redirect( -url=>"/order.cgi?SOURCE_ORDER_ID=$order") if( defined $or
 print $cgi->header;
 print $cgi->start_html( -title => "MKP Products Homepage", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );
 
-print $cgi->a({href => "/pl.cgi"}, "Profit and Loss Statement") ;
+print $cgi->a({href => "/pl.cgi"}, "Profit and Loss Statement") ; print " " ;
+print $cgi->a({href => "/pl.cgi?granularity=WEEKLY"}, "(weekly)") ;
 print $cgi->br() ;
 print $cgi->a({href => "/skupl.cgi"}, "SKU Performance" ) ;
 print $cgi->br() ;

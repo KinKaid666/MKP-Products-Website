@@ -13,11 +13,11 @@ use lib "/home/ericferg/mkp/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
 
-use constant EXPENSES_SELECT_STATEMENT => qq(
+use constant MONTHLY_EXPENSES_SELECT_STATEMENT => qq(
     select year(expense_datetime) year
            ,month(expense_datetime) month
            ,sum(total) total
-           ,case when type = 'Salary' or type = 'Rent' then 'SG&A' else 'Expense' end category
+           ,case when type = 'Consulting' or type = 'Salary' or type = 'Rent' then 'SG&A' else 'Expense' end category
            ,type
            ,description
       from expenses
@@ -32,10 +32,26 @@ use constant EXPENSES_SELECT_STATEMENT => qq(
               ,total
 ) ;
 
+use constant WEEKLY_EXPENSES_SELECT_STATEMENT => qq(
+    select date_format(expense_datetime,"%X-%V") period
+           ,sum(total) total
+           ,case when type = 'Consulting' or type = 'Salary' or type = 'Rent' then 'SG&A' else 'Expense' end category
+           ,type
+           ,description
+      from expenses
+     where date_format(expense_datetime,"%X-%V") = ?
+     group by date_format(expense_datetime,"%X-%V")
+              ,type
+              ,description
+     order by date_format(expense_datetime,"%X-%V")
+              ,total
+) ;
+
 my $username = &validate() ;
 my $cgi = CGI->new() ;
-my $year = $cgi->param('YEAR') || undef ;
+my $year  = $cgi->param('YEAR') || undef ;
 my $month = $cgi->param('MONTH') || undef ;
+my $week  = $cgi->param('WEEK') || undef ;
 print $cgi->header;
 print $cgi->start_html( -title => "MKP Products Expenses Details", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );
 
@@ -45,12 +61,22 @@ $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
                     "mkp_reporter_2018",
                     {'RaiseError' => 1});
 
-my $expenses_sth = $dbh->prepare(${\EXPENSES_SELECT_STATEMENT}) ;
-$expenses_sth->execute($year,$month) or die $DBI::errstr ;
+my $expenses_sth ;
+if( defined $week )
+{
+    $expenses_sth = $dbh->prepare(${\WEEKLY_EXPENSES_SELECT_STATEMENT}) ;
+    $expenses_sth->execute("$year-$week") or die $DBI::errstr ;
+}
+else
+{
+    $expenses_sth = $dbh->prepare(${\MONTHLY_EXPENSES_SELECT_STATEMENT}) ;
+    $expenses_sth->execute($year,$month) or die $DBI::errstr ;
+}
+
 
 print "<TABLE><TR>"                  .
       "<TH>Year</TH>"                .
-      "<TH>Month</TH>"               .
+      "<TH>" . (defined $week ? "Week" : "Month") . "</TH>" .
       "<TH>Category</TH>"            .
       "<TH>Expense Type</TH>"        .
       "<TH>Expense Description</TH>" .
@@ -59,9 +85,19 @@ print "<TABLE><TR>"                  .
 my $expenses = 0 ;
 while (my $ref = $expenses_sth->fetchrow_hashref())
 {
+    my ($y, $m_or_w) ;
+    if( defined $week )
+    {
+        ($y, $m_or_w) = split( '-', $ref->{period} ) ;
+    }
+    else
+    {
+        $y      = $ref->{year} ;
+        $m_or_w = $ref->{month} ;
+    }
     print "<TR>" ;
-    print "<TD class=string>$ref->{year}</TD>" ;
-    print "<TD class=string>$ref->{month}</TD>" ;
+    print "<TD class=number>$y</TD>" ;
+    print "<TD class=number>$m_or_w</TD>" ;
     print "<TD class=string>$ref->{category}</TD>" ;
     print "<TD class=string>$ref->{type}</TD>" ;
     print "<TD class=string>$ref->{description}</TD>" ;
