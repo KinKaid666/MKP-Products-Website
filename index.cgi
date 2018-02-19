@@ -4,7 +4,7 @@ use strict ;
 use warnings ;
 use DBI ;
 use CGI ;
-use CGI::Carp qw(fatalsToBrowser); # Remove this in production
+use CGI::Carp qw(warningsToBrowser fatalsToBrowser); # Remove this in production
 use POSIX ;
 use Locale::Currency::Format ;
 
@@ -12,6 +12,14 @@ use Locale::Currency::Format ;
 use lib "/home/ericferg/mkp/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
+
+use constant LATEST_ORDER => qq(
+    select date_format(max(order_datetime),"%Y-%m-%d") latest_order from sku_orders
+) ;
+
+use constant LATEST_INVENTORY => qq(
+    select date_format(max(report_date),"%Y-%m-%d") latest_report from onhand_inventory_reports
+) ;
 
 my $cgi = CGI->new() ;
 
@@ -25,6 +33,28 @@ print $cgi->redirect( -url=>"/order.cgi?SOURCE_ORDER_ID=$order") if( defined $or
 print $cgi->header;
 print $cgi->start_html( -title => "MKP Products Homepage", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );
 
+my $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
+                       "mkp_reporter",
+                       "mkp_reporter_2018",
+                       {'RaiseError' => 1});
+
+{
+    my $latest_sth = $dbh->prepare(${\LATEST_ORDER}) ;
+    $latest_sth->execute() or die $DBI::errstr ;
+    my $row = $latest_sth->fetchrow_hashref() ;
+
+    print $cgi->i($cgi->b("Latest ")) ;
+    print $cgi->i($cgi->b("order: ") . $row->{latest_order}) ;
+}
+{
+    my $latest_sth = $dbh->prepare(${\LATEST_INVENTORY}) ;
+    $latest_sth->execute() or die $DBI::errstr ;
+    my $row = $latest_sth->fetchrow_hashref() ;
+
+    print $cgi->i($cgi->b(" inventory: ") . $row->{latest_report}) ;
+}
+print $cgi->br() ;
+print $cgi->br() ;
 print $cgi->a({href => "/pl.cgi"}, "Profit and Loss Statement") ; print " " ;
 print $cgi->a({href => "/pl.cgi?granularity=WEEKLY"}, "(weekly)") ;
 print $cgi->br() ;
