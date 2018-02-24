@@ -14,7 +14,7 @@ use MKPFormatter ;
 use MKPUser ;
 
 use constant SKU_OHI_SELECT_STATEMENT => qq(
-    select min(order_datetime) oldest_order
+    select min(posted_dt) oldest_order
            ,so.sku
            ,ifnull(last_onhand_inventory_report.source_name, "N/A") source_name
            ,ifnull(last_onhand_inventory_report.condition_name, "N/A") condition_name
@@ -22,40 +22,32 @@ use constant SKU_OHI_SELECT_STATEMENT => qq(
            ,ifnull(last_onhand_inventory_report.quantity, 0) * sc.cost value
            ,sc.cost cost
            ,count(distinct so.source_order_id      ) order_count
-           ,sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) unit_count
-           ,sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
-                   ((case when datediff(NOW(),min(order_datetime)) > ? then ? else datediff(NOW(),min(order_datetime)) end)/ 7) weekly_velocity
+           ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) unit_count
+           ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
+                   ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/ 7) weekly_velocity
            ,ifnull(last_onhand_inventory_report.quantity, 0) /
-                   (sum(case when so.type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
-                   ((case when datediff(NOW(),min(order_datetime)) > ? then ? else datediff(NOW(),min(order_datetime)) end)/7)) woc
-           ,sum(so.product_sales                   ) product_sales
-           ,sum(shipping_credits                   ) +
-                 sum(gift_wrap_credits                  ) +
-                 sum(promotional_rebates                ) +
-                 sum(sales_tax_collected                ) +
+                   (sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
+                   ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/7)) woc
+           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
+           , sum(promotional_rebates                ) +
                  sum(marketplace_facilitator_tax        ) +
-                 sum(transaction_fees                   ) +
-                 sum(other                              ) +
+                 sum(other_fees                         ) +
                  sum(so.selling_fees                    ) selling_fees
            ,sum(so.fba_fees                        ) fba_fees
-           ,sum(case when so.type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
-           ,sum(so.product_sales                   ) +
-                 sum(shipping_credits                   ) +
-                 sum(gift_wrap_credits                  ) +
+           ,sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
+           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) +
                  sum(promotional_rebates                ) +
-                 sum(sales_tax_collected                ) +
                  sum(marketplace_facilitator_tax        ) +
-                 sum(transaction_fees                   ) +
-                 sum(other                              ) +
+                 sum(other_fees                         ) +
                  sum(so.selling_fees                    ) +
                  sum(so.fba_fees                        ) +
-                 sum(case when so.type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) contrib_margin
-      from sku_orders so
+                 sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) contrib_margin
+      from financial_shipment_events so
       join sku_costs sc
         on so.sku = sc.sku
-       and sc.start_date < so.order_datetime
+       and sc.start_date < so.posted_dt
        and (sc.end_date is null or
-            sc.end_date > so.order_datetime)
+            sc.end_date > so.posted_dt)
       left outer join (
             select ohi.sku
                    ,ohi.report_date
@@ -66,7 +58,7 @@ use constant SKU_OHI_SELECT_STATEMENT => qq(
              where report_date = ( select max(report_date) from onhand_inventory_reports )
           ) last_onhand_inventory_report
         on last_onhand_inventory_report.sku = so.sku
-     where so.order_datetime > NOW() - INTERVAL ? DAY
+     where so.posted_dt > NOW() - INTERVAL ? DAY
      group by sku
               ,sc.cost
               ,last_onhand_inventory_report.source_name

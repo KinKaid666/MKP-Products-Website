@@ -14,68 +14,62 @@ use MKPFormatter ;
 use MKPUser ;
 
 use constant ORDER_PNL_SELECT_STATEMENT => qq(
-    select date_format(so.order_datetime,"%Y") year
-           ,date_format(so.order_datetime, "%m") month
+    select date_format(so.posted_dt,"%Y") year
+           ,date_format(so.posted_dt, "%m") month
            ,so.source_order_id
            ,so.sku
            ,count(distinct so.source_order_id      ) order_count
            ,sum(so.quantity                        ) unit_count
-           ,sum(so.product_sales                   ) product_sales
-           , sum(shipping_credits                   ) +
-                 sum(gift_wrap_credits                  ) +
-                 sum(promotional_rebates                ) +
-                 sum(sales_tax_collected                ) +
+           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
+           , sum(promotional_rebates                ) +
                  sum(marketplace_facilitator_tax        ) +
-                 sum(transaction_fees                   ) +
-                 sum(other                              ) +
+                 sum(other_fees                         ) +
                  sum(so.selling_fees                    ) selling_fees
            ,sum(so.fba_fees                        ) fba_fees
-           ,sum(case when so.type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
-           ,sum(so.product_sales                   ) +
-                 sum(shipping_credits                   ) +
-                 sum(gift_wrap_credits                  ) +
+           ,sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
+           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) +
                  sum(promotional_rebates                ) +
-                 sum(sales_tax_collected                ) +
                  sum(marketplace_facilitator_tax        ) +
-                 sum(transaction_fees                   ) +
-                 sum(other                              ) +
+                 sum(other_fees                         ) +
                  sum(so.selling_fees                    ) +
                  sum(so.fba_fees                        ) +
-                 sum(case when so.type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) contrib_margin
-      from sku_orders so
+                 sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) contrib_margin
+      from financial_shipment_events so
       join sku_costs sc
         on so.sku = sc.sku
-       and sc.start_date < so.order_datetime
+       and sc.start_date < so.posted_dt
        and (sc.end_date is null or
-            sc.end_date > so.order_datetime)
+            sc.end_date > so.posted_dt)
      where so.source_order_id = ?
-    group by date_format(so.order_datetime,"%Y")
-             ,date_format(so.order_datetime,"%m")
+    group by date_format(so.posted_dt,"%Y")
+             ,date_format(so.posted_dt,"%m")
              ,sku
-    order by date_format(so.order_datetime,"%Y")
-             ,date_format(so.order_datetime,"%m")
+    order by date_format(so.posted_dt,"%Y")
+             ,date_format(so.posted_dt,"%m")
              ,sku
 ) ;
 
 use constant ORDER_DETAILS_SELECT_STATEMENT => qq(
-    select so.order_datetime
+    select so.posted_dt
            ,so.sku
            ,so.source_order_id
-           ,so.type
+           ,so.event_type
            ,so.quantity
-           ,so.product_sales
-           ,so.shipping_credits
-           ,so.gift_wrap_credits
+           ,so.product_charges
+           ,so.product_charges_tax
+           ,so.shipping_charges
+           ,so.shipping_charges_tax
+           ,so.giftwrap_charges
+           ,so.giftwrap_charges_tax
            ,so.promotional_rebates
-           ,so.sales_tax_collected
            ,so.marketplace_facilitator_tax
-           ,so.transaction_fees
-           ,so.other
+           ,so.other_fees
            ,so.selling_fees
            ,so.fba_fees
-      from sku_orders so
+           ,so.total
+      from financial_shipment_events so
      where so.source_order_id = ?
-     order by so.order_datetime
+     order by so.posted_dt
 ) ;
 
 my $username = &validate() ;
@@ -129,41 +123,45 @@ print "<BR><BR>" ;
 my $s_sth = $dbh->prepare(${\ORDER_DETAILS_SELECT_STATEMENT}) ;
 $s_sth->execute($sku) or die $DBI::errstr ;
 
-print "<TABLE><TR>"           .
-      "<TH>Order Datetime</TH>"         .
-      "<TH>Source Order Id</TH>"  .
-      "<TH>SKU</TH>"        .
-      "<TH>Type</TH>"  .
-      "<TH>Quantity</TH>"  .
-      "<TH>Sales</TH>"        .
-      "<TH>Shipping Credits</TH>" .
-      "<TH>Gift Wrap Credits</TH>" .
-      "<TH>Promotional Rebates</TH>" .
-      "<TH>Sales Tax Collected</TH>" .
+print "<TABLE><TR>"                        .
+      "<TH>Posted Datetime</TH>"           .
+      "<TH>SKU</TH>"                       .
+      "<TH>Source Order Id</TH>"           .
+      "<TH>Type</TH>"                      .
+      "<TH>Quantity</TH>"                  .
+      "<TH>Product Charges</TH>"           .
+      "<TH>Product Charges Tax</TH>"       .
+      "<TH>Shipping Charges</TH>"          .
+      "<TH>Shipping Charges Tax</TH>"      .
+      "<TH>Giftwrap Charges</TH>"          .
+      "<TH>Giftwrap Charges Tax</TH>"      .
+      "<TH>Promotional Rebates</TH>"       .
       "<TH>Markplace Facilitator Tax</TH>" .
-      "<TH>Transaciton Fees</TH>" .
-      "<TH>Other</TH>" .
-      "<TH>Selling Fees</TH>" .
-      "<TH>FBA Fees</TH>"     .
+      "<TH>Other Fees</TH>"                .
+      "<TH>Selling Fees</TH>"              .
+      "<TH>FBA Fees</TH>"                  .
+      "<TH>Total</TH>"                     .
       "</TR> \n" ;
 while (my $ref = $s_sth->fetchrow_hashref())
 {
     print "<TR>" ;
-    print "<TD class=string>$ref->{order_datetime}</TD>" ;
+    print "<TD class=string>$ref->{posted_dt}</TD>" ;
     print "<TD class=string><a href=https://sellercentral.amazon.com/hz/orders/details?_encoding=UTF8&orderId=$ref->{source_order_id}>$ref->{source_order_id}</a></TD>" ;
     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
-    print "<TD class=string>$ref->{type}</TD>" ;
+    print "<TD class=string>$ref->{event_type}</TD>" ;
     print "<TD class=number>" . &format_integer($ref->{quantity})                . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{product_sales})               . ">" . &format_currency($ref->{product_sales},2)               . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{shipping_credits})            . ">" . &format_currency($ref->{shipping_credits},2)            . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{gift_wrap_credits})           . ">" . &format_currency($ref->{gift_wrap_credits},2)           . "</TD>" ;
+    print "<TD class=number" . &add_neg_tag($ref->{product_charges})             . ">" . &format_currency($ref->{product_charges},2)             . "</TD>" ;
+    print "<TD class=number" . &add_neg_tag($ref->{product_charges_tax})         . ">" . &format_currency($ref->{product_charges_tax},2)         . "</TD>" ;
+    print "<TD class=number" . &add_neg_tag($ref->{shipping_charges})            . ">" . &format_currency($ref->{shipping_charges},2)            . "</TD>" ;
+    print "<TD class=number" . &add_neg_tag($ref->{shipping_charges_tax})        . ">" . &format_currency($ref->{shipping_charges_tax},2)        . "</TD>" ;
+    print "<TD class=number" . &add_neg_tag($ref->{giftwrap_charges})            . ">" . &format_currency($ref->{giftwrap_charges},2)            . "</TD>" ;
+    print "<TD class=number" . &add_neg_tag($ref->{giftwrap_charges_tax})        . ">" . &format_currency($ref->{giftwrap_charges_tax},2)        . "</TD>" ;
     print "<TD class=number" . &add_neg_tag($ref->{promotional_rebates})         . ">" . &format_currency($ref->{promotional_rebates},2)         . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{sales_tax_collected})         . ">" . &format_currency($ref->{sales_tax_collected},2)         . "</TD>" ;
     print "<TD class=number" . &add_neg_tag($ref->{marketplace_facilitator_tax}) . ">" . &format_currency($ref->{marketplace_facilitator_tax},2) . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{transaction_fees})            . ">" . &format_currency($ref->{transaction_fees},2)            . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{other})                       . ">" . &format_currency($ref->{other},2)                       . "</TD>" ;
+    print "<TD class=number" . &add_neg_tag($ref->{other_fees})                  . ">" . &format_currency($ref->{other_fees},2)                  . "</TD>" ;
     print "<TD class=number" . &add_neg_tag($ref->{selling_fees})                . ">" . &format_currency($ref->{selling_fees},2)                . "</TD>" ;
     print "<TD class=number" . &add_neg_tag($ref->{fba_fees})                    . ">" . &format_currency($ref->{fba_fees},2)                    . "</TD>" ;
+    print "<TD class=number" . &add_neg_tag($ref->{total})                       . ">" . &format_currency($ref->{total},2)                       . "</TD>" ;
     print "</TR>" ;
 }
 $dbh->disconnect() ;

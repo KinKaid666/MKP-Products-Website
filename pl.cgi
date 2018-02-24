@@ -19,43 +19,39 @@ use constant WEEKLY_PNL_SELECT_STATEMENT => qq(
            , order_count
            , unit_count
            , product_sales
-           , (shipping_credits + gift_wrap_credits + promotional_rebates + sales_tax_collected + marketplace_facilitator_tax + transaction_fees + other + selling_fees) selling_fees
+           , (promotional_rebates + marketplace_facilitator_tax + other_fees + selling_fees) selling_fees
            , fba_fees
            , cogs , ifnull(expenses_by_week.expenses,0) expenses
            , ifnull(sga_by_week.expenses,0) sga
-           , (product_sales + shipping_credits + gift_wrap_credits + promotional_rebates + sales_tax_collected + marketplace_facilitator_tax + transaction_fees + other + selling_fees + fba_fees + cogs + ifnull(expenses_by_week.expenses,0) + ifnull(sga_by_week.expenses,0) ) net_income
-      from ( select date_format(so.order_datetime,"%X") year
-                    ,date_format(so.order_datetime, "%V") week
+           , (product_sales + promotional_rebates + marketplace_facilitator_tax + other_fees + selling_fees + fba_fees + cogs + ifnull(expenses_by_week.expenses,0) + ifnull(sga_by_week.expenses,0) ) net_income
+      from ( select date_format(so.posted_dt,"%X") year
+                    ,date_format(so.posted_dt, "%V") week
                     ,count(distinct so.source_order_id      ) order_count
                     ,sum(so.quantity                        ) unit_count
-                    ,sum(so.product_sales                   ) product_sales
-                    ,sum(shipping_credits                   ) shipping_credits
-                    ,sum(gift_wrap_credits                  ) gift_wrap_credits
-                    ,sum(promotional_rebates                ) promotional_rebates
-                    ,sum(sales_tax_collected                ) sales_tax_collected
-                    ,sum(marketplace_facilitator_tax        ) marketplace_facilitator_tax
-                    ,sum(transaction_fees                   ) transaction_fees
-                    ,sum(other                              ) other
+                    ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
+                    ,sum(so.promotional_rebates             ) promotional_rebates
+                    ,sum(so.marketplace_facilitator_tax     ) marketplace_facilitator_tax
+                    ,sum(so.other_fees                      ) other_fees
                     ,sum(so.selling_fees                    ) selling_fees
                     ,sum(so.fba_fees                        ) fba_fees
-                    ,sum(case when so.type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
-               from sku_orders so
+                    ,sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
+               from financial_shipment_events so
                join sku_costs sc
                  on so.sku = sc.sku
-                and sc.start_date < so.order_datetime
+                and sc.start_date < so.posted_dt
                 and (sc.end_date is null or
-                     sc.end_date > so.order_datetime)
-             group by date_format(so.order_datetime,"%X")
-                      ,date_format(so.order_datetime,"%V")
+                     sc.end_date > so.posted_dt)
+             group by date_format(so.posted_dt,"%X")
+                      ,date_format(so.posted_dt,"%V")
       ) as sku_activity_by_week
-      left outer join ( select date_format(e.expense_datetime,"%X") year
-                    ,date_format(e.expense_datetime,"%V") week
+      left outer join ( select date_format(e.expense_dt,"%X") year
+                    ,date_format(e.expense_dt,"%V") week
                     ,sum(e.total) expenses
-               from expenses e
+               from financial_expense_events e
               where type <> "Salary"
                 and type <> "Rent"
-             group by date_format(e.expense_datetime,"%X")
-                      ,date_format(e.expense_datetime,"%V")
+             group by date_format(e.expense_dt,"%X")
+                      ,date_format(e.expense_dt,"%V")
            ) expenses_by_week
         on sku_activity_by_week.year = expenses_by_week.year
        and sku_activity_by_week.week = expenses_by_week.week
@@ -79,43 +75,39 @@ use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
            , order_count
            , unit_count
            , product_sales
-           , (shipping_credits + gift_wrap_credits + promotional_rebates + sales_tax_collected + marketplace_facilitator_tax + transaction_fees + other + selling_fees) selling_fees
+           , (promotional_rebates + marketplace_facilitator_tax + other_fees + selling_fees) selling_fees
            , fba_fees
            , cogs , ifnull(expenses_by_month.expenses,0) expenses
            , ifnull(sga_by_month.expenses,0) sga
-           , (product_sales + shipping_credits + gift_wrap_credits + promotional_rebates + sales_tax_collected + marketplace_facilitator_tax + transaction_fees + other + selling_fees + fba_fees + cogs + ifnull(expenses_by_month.expenses,0) + ifnull(sga_by_month.expenses,0) ) net_income
-      from ( select date_format(so.order_datetime,"%Y") year
-                    ,date_format(so.order_datetime, "%m") month
+           , (product_sales + promotional_rebates + marketplace_facilitator_tax + other_fees + selling_fees + fba_fees + cogs + ifnull(expenses_by_month.expenses,0) + ifnull(sga_by_month.expenses,0) ) net_income
+      from ( select date_format(so.posted_dt,"%Y") year
+                    ,date_format(so.posted_dt, "%m") month
                     ,count(distinct so.source_order_id      ) order_count
                     ,sum(so.quantity                        ) unit_count
-                    ,sum(so.product_sales                   ) product_sales
-                    ,sum(shipping_credits                   ) shipping_credits
-                    ,sum(gift_wrap_credits                  ) gift_wrap_credits
+                    ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
                     ,sum(promotional_rebates                ) promotional_rebates
-                    ,sum(sales_tax_collected                ) sales_tax_collected
                     ,sum(marketplace_facilitator_tax        ) marketplace_facilitator_tax
-                    ,sum(transaction_fees                   ) transaction_fees
-                    ,sum(other                              ) other
+                    ,sum(so.other_fees                      ) other_fees
                     ,sum(so.selling_fees                    ) selling_fees
                     ,sum(so.fba_fees                        ) fba_fees
-                    ,sum(case when so.type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
-               from sku_orders so
+                    ,sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
+               from financial_shipment_events so
                join sku_costs sc
                  on so.sku = sc.sku
-                and sc.start_date < so.order_datetime
+                and sc.start_date < so.posted_dt
                 and (sc.end_date is null or
-                     sc.end_date > so.order_datetime)
-             group by date_format(so.order_datetime,"%Y")
-                      ,date_format(so.order_datetime,"%m")
+                     sc.end_date > so.posted_dt)
+             group by date_format(so.posted_dt,"%Y")
+                      ,date_format(so.posted_dt,"%m")
       ) as sku_activity_by_month
-      left outer join ( select date_format(e.expense_datetime,"%Y") year
-                    ,date_format(e.expense_datetime,"%m") month
+      left outer join ( select date_format(e.expense_dt,"%Y") year
+                    ,date_format(e.expense_dt,"%m") month
                     ,sum(e.total) expenses
-               from expenses e
+               from financial_expense_events e
               where type <> "Salary"
                 and type <> "Rent"
-             group by date_format(e.expense_datetime,"%Y")
-                      ,date_format(e.expense_datetime,"%m")
+             group by date_format(e.expense_dt,"%Y")
+                      ,date_format(e.expense_dt,"%m")
            ) expenses_by_month
         on sku_activity_by_month.year = expenses_by_month.year
        and sku_activity_by_month.month = expenses_by_month.month
@@ -135,7 +127,7 @@ use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
 
 my $username = &validate() ;
 my $cgi = CGI->new() ;
-my $option = $cgi->param('granularity') ;
+my $option = $cgi->param('granularity') || "MONTHLY" ;
 
 print $cgi->header;
 print $cgi->start_html( -title => "MKP Products P&L", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );

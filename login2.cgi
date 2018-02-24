@@ -33,10 +33,19 @@ $sth->execute($cookie_id, $username, $ENV{REMOTE_ADDR}) or &dbdie;
 
 if ($cgi->param('page')) {
    my $url = $cgi->param('page');
+
    # CGI.pm's redirect function can accept all of the same parameters
    # as the header function, so we can set a cookie and issue a redirect
    # at the same time.
-   print $cgi->redirect(-location=>"http://prod.mkpproducts.com/$url", -cookie=>$cookie);
+   if($url eq "/")
+   {
+       # this causes the index.html page to not work if you have '//' at the end
+       print $cgi->redirect(-location=>"http://prod.mkpproducts.com", -cookie=>$cookie);
+   }
+   else
+   {
+       print $cgi->redirect(-location=>"http://prod.mkpproducts.com/$url", -cookie=>$cookie);
+   }
 } else { 
    # no page was specified, so print a "you have logged in" message.
    # On a production site, you may want to change this to print

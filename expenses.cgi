@@ -14,6 +14,13 @@ use MKPFormatter ;
 use MKPUser ;
 
 use constant MONTHLY_EXPENSES_SELECT_STATEMENT => qq(
+select year
+       ,month
+       ,total
+       ,category
+       ,type
+       ,description
+  from (
     select year(expense_datetime) year
            ,month(expense_datetime) month
            ,sum(total) total
@@ -27,12 +34,33 @@ use constant MONTHLY_EXPENSES_SELECT_STATEMENT => qq(
               ,month(expense_datetime)
               ,type
               ,description
-     order by year(expense_datetime)
-              ,month(expense_datetime)
+union all
+    select year(expense_dt) year
+           ,month(expense_dt) month
+           ,sum(total) total
+           ,case when type = 'Consulting' or type = 'Salary' or type = 'Rent' then 'SG&A' else 'Expense' end category
+           ,type
+           ,description
+      from financial_expense_events
+     where year(expense_dt) = ?
+       and month(expense_dt) = ?
+     group by year(expense_dt)
+              ,month(expense_dt)
+              ,type
+              ,description
+) a
+     order by year
+              ,month
               ,total
 ) ;
 
 use constant WEEKLY_EXPENSES_SELECT_STATEMENT => qq(
+select period
+       ,total
+       ,category
+       ,type
+       ,description
+  from (
     select date_format(expense_datetime,"%X-%V") period
            ,sum(total) total
            ,case when type = 'Consulting' or type = 'Salary' or type = 'Rent' then 'SG&A' else 'Expense' end category
@@ -43,7 +71,19 @@ use constant WEEKLY_EXPENSES_SELECT_STATEMENT => qq(
      group by date_format(expense_datetime,"%X-%V")
               ,type
               ,description
-     order by date_format(expense_datetime,"%X-%V")
+    union all
+    select date_format(expense_dt,"%X-%V") period
+           ,sum(total) total
+           ,case when type = 'Consulting' or type = 'Salary' or type = 'Rent' then 'SG&A' else 'Expense' end category
+           ,type
+           ,description
+      from financial_expense_events
+     where date_format(expense_dt,"%X-%V") = ?
+     group by date_format(expense_dt,"%X-%V")
+              ,type
+              ,description
+    ) a
+     order by period
               ,total
 ) ;
 
@@ -65,12 +105,12 @@ my $expenses_sth ;
 if( defined $week )
 {
     $expenses_sth = $dbh->prepare(${\WEEKLY_EXPENSES_SELECT_STATEMENT}) ;
-    $expenses_sth->execute("$year-$week") or die $DBI::errstr ;
+    $expenses_sth->execute("$year-$week","$year-$week") or die $DBI::errstr ;
 }
 else
 {
     $expenses_sth = $dbh->prepare(${\MONTHLY_EXPENSES_SELECT_STATEMENT}) ;
-    $expenses_sth->execute($year,$month) or die $DBI::errstr ;
+    $expenses_sth->execute($year,$month,$year,$month) or die $DBI::errstr ;
 }
 
 

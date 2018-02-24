@@ -13,8 +13,42 @@ use lib "/home/ericferg/mkp/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
 
-use constant LATEST_ORDER => qq(
-    select date_format(max(order_datetime),"%Y-%m-%d") latest_order from sku_orders
+use constant TRAILING_DAY_SALES => qq(
+select a.posted_dt date
+       , sum(sales)    sales
+       , sum(fees)     fees
+       , sum(ifnull(expenses,0)) expenses
+       , sum(cogs) cogs
+       , sum(sales) + sum(fees) + sum(cogs) + sum(ifnull(expenses,0)) total
+  from (
+      select date_format(posted_dt, "%Y-%m-%d") posted_dt
+             , sum(product_charges + shipping_charges + giftwrap_charges) sales
+             , sum(product_charges_tax + shipping_charges_tax + giftwrap_charges_tax + marketplace_facilitator_tax) taxes
+             , sum(promotional_rebates + selling_fees + fba_fees + other_fees) fees
+             , sum(case when fse.event_type = 'Refund' then sc.cost*fse.quantity*1 else sc.cost*fse.quantity*-1 end) cogs
+        from financial_shipment_events fse
+        join sku_costs sc
+          on fse.sku = sc.sku
+         and sc.start_date < fse.posted_dt
+         and (sc.end_date is null or
+              sc.end_date > fse.posted_dt)
+       where posted_dt > DATE(NOW() - INTERVAL ? DAY)
+       group by date_format(posted_dt, "%Y-%m-%d")
+) a left outer join (
+      select date_format(expense_dt, "%Y-%m-%d") posted_dt
+             , sum(total) expenses
+        from financial_expense_events fse
+       where expense_dt > DATE(NOW() - INTERVAL ? DAY)
+       group by date_format(expense_dt, "%Y-%m-%d")
+       union all
+      select date_format(expense_datetime, "%Y-%m-%d") posted_dt
+             , sum(total) expenses
+        from expenses fse
+       where expense_datetime > DATE(NOW() - INTERVAL ? DAY)
+       group by date_format(expense_datetime, "%Y-%m-%d")
+) b on a.posted_dt = b.posted_dt
+group by a.posted_dt
+order by a.posted_dt desc
 ) ;
 
 use constant LATEST_INVENTORY => qq(
@@ -39,28 +73,49 @@ my $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
                        {'RaiseError' => 1});
 
 {
-    my $latest_sth = $dbh->prepare(${\LATEST_ORDER}) ;
-    $latest_sth->execute() or die $DBI::errstr ;
-    my $row = $latest_sth->fetchrow_hashref() ;
-
-    print $cgi->i($cgi->b("Latest ")) ;
-    print $cgi->i($cgi->b("order: ") . $row->{latest_order}) ;
-}
-{
     my $latest_sth = $dbh->prepare(${\LATEST_INVENTORY}) ;
     $latest_sth->execute() or die $DBI::errstr ;
     my $row = $latest_sth->fetchrow_hashref() ;
 
+    print $cgi->i($cgi->b("Latest ")) ;
     print $cgi->i($cgi->b(" inventory: ") . $row->{latest_report}) ;
 }
-print $cgi->br() ;
-print $cgi->br() ;
+
+my $s_sth = $dbh->prepare(${\TRAILING_DAY_SALES}) ;
+my $days = 7 ;
+$s_sth->execute($days, $days, $days) or die $DBI::errstr ;
+
+print $cgi->h3("Trailing $days Sales Flash") ;
+print "<TABLE><TR>"       .
+      "<TH>Date</TH>"     .
+      "<TH>Sales</TH>"    .
+      "<TH>Fees</TH>"     .
+      "<TH>COGS</TH>"     .
+      "<TH>Expenses</TH>" .
+      "<TH>Total</TH>"    .
+      "</TR> \n" ;
+while (my $ref = $s_sth->fetchrow_hashref())
+{
+    print "<TR>\n" ;
+    print "<TD class=string>$ref->{date} </TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{sales})    . ">" . &format_currency($ref->{sales},2)    . "</TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{fees})     . ">" . &format_currency($ref->{fees},2)     . "</TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{cogs})     . ">" . &format_currency($ref->{cogs},2)     . "</TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{expenses}) . ">" . &format_currency($ref->{expenses},2) . "</TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{total})    . ">" . &format_currency($ref->{total},2)    . "</TD>\n" ;
+    print "</TR>\n" ;
+}
+print "</TABLE><br><br>\n" ;
+$s_sth->finish() ;
+
 print $cgi->a({href => "/pl.cgi"}, "Profit and Loss Statement") ; print " " ;
 print $cgi->a({href => "/pl.cgi?granularity=WEEKLY"}, "(weekly)") ;
 print $cgi->br() ;
 print $cgi->a({href => "/skupl.cgi"}, "SKU Performance" ) ;
 print $cgi->br() ;
 print $cgi->a({href => "/newbuy.cgi"}, "SKU Buying" ) ;
+print $cgi->br() ;
+print $cgi->a({href => "/feg.cgi"}, "Financial Event Groups" ) ;
 print $cgi->br() ;
 print $cgi->br() ;
 
@@ -92,4 +147,10 @@ print $cgi->submit( -name     => 'submit_form',
                     -value    => 'Submit') ;
 print $cgi->end_form() ;
 print $cgi->end_html() ;
+
+sub add_neg_tag
+{
+    my $number = shift || 0 ;
+    return ($number < 0 ? "-neg" : "" ) ;
+}
 
