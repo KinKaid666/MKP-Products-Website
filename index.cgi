@@ -22,9 +22,8 @@ select a.posted_dt date
        , sum(sales) + sum(fees) + sum(cogs) + sum(ifnull(expenses,0)) total
   from (
       select date_format(posted_dt, "%Y-%m-%d") posted_dt
-             , sum(product_charges + shipping_charges + giftwrap_charges) sales
-             , sum(product_charges_tax + shipping_charges_tax + giftwrap_charges_tax + marketplace_facilitator_tax) taxes
-             , sum(promotional_rebates + selling_fees + fba_fees + other_fees) fees
+             , sum(product_charges + shipping_charges + giftwrap_charges + product_charges_tax + shipping_charges_tax + giftwrap_charges_tax) sales
+             , sum(marketplace_facilitator_tax + promotional_rebates + selling_fees + fba_fees + other_fees) fees
              , sum(case when fse.event_type = 'Refund' then sc.cost*fse.quantity*1 else sc.cost*fse.quantity*-1 end) cogs
         from financial_shipment_events fse
         join sku_costs sc
@@ -49,6 +48,46 @@ select a.posted_dt date
 ) b on a.posted_dt = b.posted_dt
 group by a.posted_dt
 order by a.posted_dt desc
+) ;
+
+use constant MTD_SALES => qq(
+select b.mon
+       , sum(sales)    sales
+       , sum(fees)     fees
+       , sum(ifnull(expenses,0)) expenses
+       , sum(cogs) cogs
+       , sum(sales) + sum(fees) + sum(cogs) + sum(ifnull(expenses,0)) total
+  from (
+      select date_format(fse.posted_dt, "%m") mon
+             , sum(product_charges + shipping_charges + giftwrap_charges + product_charges_tax + shipping_charges_tax + giftwrap_charges_tax) sales
+             , sum(marketplace_facilitator_tax + promotional_rebates + selling_fees + fba_fees + other_fees) fees
+             , sum(case when fse.event_type = 'Refund' then sc.cost*fse.quantity*1 else sc.cost*fse.quantity*-1 end) cogs
+        from financial_shipment_events fse
+        join sku_costs sc
+          on fse.sku = sc.sku
+         and sc.start_date < fse.posted_dt
+         and (sc.end_date is null or
+              sc.end_date > fse.posted_dt)
+       where posted_dt >= date_format(NOW(),"%Y-%m-01")
+       group by date_format(fse.posted_dt, "%m")
+) a left outer join (
+    select mon,
+           sum(expenses) expenses
+    from (
+      select date_format(fse.expense_dt, "%m") mon
+             , sum(total) expenses
+        from financial_expense_events fse
+       where expense_dt >= date_format(NOW(),"%Y-%m-01")
+       group by date_format(fse.expense_dt, "%m")
+       union all
+      select date_format(fse.expense_datetime, "%m")
+             , sum(total) expenses
+        from expenses fse
+       where expense_datetime >= date_format(NOW(),"%Y-%m-01")
+       group by date_format(fse.expense_datetime, "%m")
+    ) a group by a.mon
+) b on a.mon = b.mon
+group by b.mon
 ) ;
 
 use constant LATEST_INVENTORY => qq(
@@ -105,6 +144,17 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "<TD class=number" . &add_neg_tag($ref->{total})    . ">" . &format_currency($ref->{total},2)    . "</TD>\n" ;
     print "</TR>\n" ;
 }
+my $mtd_sth = $dbh->prepare(${\MTD_SALES}) ;
+$mtd_sth->execute() or die $DBI::errstr ;
+my $mtd_row = $mtd_sth->fetchrow_hashref() ;
+print "<TR>\n" ;
+print "<TD class=string>MTD</TD>\n" ;
+print "<TD class=number" . &add_neg_tag($mtd_row->{sales})    . ">" . &format_currency($mtd_row->{sales},2)    . "</TD>\n" ;
+print "<TD class=number" . &add_neg_tag($mtd_row->{fees})     . ">" . &format_currency($mtd_row->{fees},2)     . "</TD>\n" ;
+print "<TD class=number" . &add_neg_tag($mtd_row->{cogs})     . ">" . &format_currency($mtd_row->{cogs},2)     . "</TD>\n" ;
+print "<TD class=number" . &add_neg_tag($mtd_row->{expenses}) . ">" . &format_currency($mtd_row->{expenses},2) . "</TD>\n" ;
+print "<TD class=number" . &add_neg_tag($mtd_row->{total})    . ">" . &format_currency($mtd_row->{total},2)    . "</TD>\n" ;
+print "</TR>\n" ;
 print "</TABLE><br><br>\n" ;
 $s_sth->finish() ;
 
