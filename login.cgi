@@ -5,7 +5,11 @@ use strict;
 
 my $cgi = CGI->new() ;
 print $cgi->header() ;
-print $cgi->start_html("Login") ;
+print $cgi->start_html( -title => "MKP Login Page",
+                        -style => {'src'=>'http://prod.mkpproducts.com/style.css'},
+                        -head => [$cgi->Link({-rel=>'shortcut icon',
+                                              -href=>'favicon.png'})]);
+
 
 my $page = $ENV{QUERY_STRING} ;
 

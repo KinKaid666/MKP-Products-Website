@@ -75,7 +75,11 @@ my $buy_amount = $cgi->param('buy_amount') || 2500 ;
 my $dbh ;
 
 print $cgi->header;
-print $cgi->start_html( -title => "MKP Products New Buy", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );
+print $cgi->start_html( -title => "MKP Products New Buy",
+                        -style => {'src'=>'http://prod.mkpproducts.com/style.css'},
+                        -head => [$cgi->Link({-rel=>'shortcut icon',
+                                              -href=>'favicon.png'})]);
+
 print $cgi->start_form(
     -name    => 'main_form',
     -method  => 'POST',

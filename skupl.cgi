@@ -81,7 +81,11 @@ my $show_active = $cgi->param('show_active') ;
 
 
 print $cgi->header;
-print $cgi->start_html( -title => "MKP Products SKU Performance", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );
+print $cgi->start_html( -title => "MKP Products SKU Performance",
+                        -style => {'src'=>'http://prod.mkpproducts.com/style.css'},
+                        -head => [$cgi->Link({-rel=>'shortcut icon',
+                                              -href=>'favicon.png'})]);
+
 print $cgi->start_form(
     -name    => 'main_form',
     -method  => 'POST',

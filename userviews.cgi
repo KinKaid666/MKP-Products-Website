@@ -29,7 +29,10 @@ my $username = &validate() ;
 my $cgi = CGI->new() ;
 
 print $cgi->header;
-print $cgi->start_html( -title => "MKP Products Financials", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );
+print $cgi->start_html( -title => "MKP Products Financials",
+                        -style => {'src'=>'http://prod.mkpproducts.com/style.css'},
+                        -head => [$cgi->Link({-rel=>'shortcut icon',
+                                              -href=>'favicon.png'})]);
 
 {
     print $cgi->h3("Last 5 Page Views") ;

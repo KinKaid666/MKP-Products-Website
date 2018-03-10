@@ -148,7 +148,11 @@ my $cgi = CGI->new() ;
 my $sku = $cgi->param('SKU') || 'MKP-F5117-4' ;
 my $days = $cgi->param('days') || 90 ;
 print $cgi->header;
-print $cgi->start_html( -title => "MKP Products SKU Details", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );
+print $cgi->start_html( -title => "MKP Products SKU Details",
+                        -style => {'src'=>'http://prod.mkpproducts.com/style.css'},
+                        -head => [$cgi->Link({-rel=>'shortcut icon',
+                                              -href=>'favicon.png'})]);
+
 my $dbh ;
 
 $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",

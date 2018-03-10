@@ -24,7 +24,11 @@ $sth = $userdbh->prepare("delete from user_cookies where username=?") or &dbdie 
 $sth->execute($username) or &dbdie ;
 
 print $cgi->header(-cookie=>$cookie) ;
-print $cgi->start_html("Logged out") ;
+print $cgi->start_html( -title => "MKP Logout Page",
+                        -style => {'src'=>'http://prod.mkpproducts.com/style.css'},
+                        -head => [$cgi->Link({-rel=>'shortcut icon',
+                                              -href=>'favicon.png'})]);
+
 print qq(<h2>Goodbye!</h2>\n) ;
 print qq(You are now logged out.<br>\n) ;
 print $cgi->end_html() ;

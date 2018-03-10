@@ -93,7 +93,10 @@ my $year  = $cgi->param('YEAR') || undef ;
 my $month = $cgi->param('MONTH') || undef ;
 my $week  = $cgi->param('WEEK') || undef ;
 print $cgi->header;
-print $cgi->start_html( -title => "MKP Products Expenses Details", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );
+print $cgi->start_html( -title => "MKP Products Expenses Details",
+                        -style => {'src'=>'http://prod.mkpproducts.com/style.css'},
+                        -head => [$cgi->Link({-rel=>'shortcut icon',
+                                              -href=>'favicon.png'})]);
 
 my $dbh ;
 $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
