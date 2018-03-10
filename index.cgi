@@ -31,19 +31,19 @@ select a.posted_dt date
          and sc.start_date < fse.posted_dt
          and (sc.end_date is null or
               sc.end_date > fse.posted_dt)
-       where posted_dt > DATE(NOW() - INTERVAL ? DAY)
+       where posted_dt >= DATE(NOW() - INTERVAL ? DAY)
        group by date_format(posted_dt, "%Y-%m-%d")
 ) a left outer join (
       select date_format(expense_dt, "%Y-%m-%d") posted_dt
              , sum(total) expenses
         from financial_expense_events fse
-       where expense_dt > DATE(NOW() - INTERVAL ? DAY)
+       where expense_dt >= DATE(NOW() - INTERVAL ? DAY)
        group by date_format(expense_dt, "%Y-%m-%d")
        union all
       select date_format(expense_datetime, "%Y-%m-%d") posted_dt
              , sum(total) expenses
         from expenses fse
-       where expense_datetime > DATE(NOW() - INTERVAL ? DAY)
+       where expense_datetime >= DATE(NOW() - INTERVAL ? DAY)
        group by date_format(expense_datetime, "%Y-%m-%d")
 ) b on a.posted_dt = b.posted_dt
 group by a.posted_dt
@@ -51,14 +51,14 @@ order by a.posted_dt desc
 ) ;
 
 use constant MTD_SALES => qq(
-select b.mon
+select a.mon
        , sum(sales)    sales
        , sum(fees)     fees
        , sum(ifnull(expenses,0)) expenses
        , sum(cogs) cogs
        , sum(sales) + sum(fees) + sum(cogs) + sum(ifnull(expenses,0)) total
   from (
-      select date_format(fse.posted_dt, "%m") mon
+      select 'A' mon
              , sum(product_charges + shipping_charges + giftwrap_charges + product_charges_tax + shipping_charges_tax + giftwrap_charges_tax) sales
              , sum(marketplace_facilitator_tax + promotional_rebates + selling_fees + fba_fees + other_fees) fees
              , sum(case when fse.event_type = 'Refund' then sc.cost*fse.quantity*1 else sc.cost*fse.quantity*-1 end) cogs
@@ -68,26 +68,29 @@ select b.mon
          and sc.start_date < fse.posted_dt
          and (sc.end_date is null or
               sc.end_date > fse.posted_dt)
-       where posted_dt >= date_format(NOW(),"%Y-%m-01")
-       group by date_format(fse.posted_dt, "%m")
+       where posted_dt >= DATE(NOW() - INTERVAL ? DAY)
 ) a left outer join (
     select mon,
            sum(expenses) expenses
     from (
-      select date_format(fse.expense_dt, "%m") mon
+      select 'A' mon
              , sum(total) expenses
         from financial_expense_events fse
-       where expense_dt >= date_format(NOW(),"%Y-%m-01")
+       where expense_dt >= DATE(NOW() - INTERVAL ? DAY)
        group by date_format(fse.expense_dt, "%m")
        union all
-      select date_format(fse.expense_datetime, "%m")
+      select 'A'
              , sum(total) expenses
         from expenses fse
-       where expense_datetime >= date_format(NOW(),"%Y-%m-01")
+       where expense_datetime >= DATE(NOW() - INTERVAL ? DAY)
        group by date_format(fse.expense_datetime, "%m")
     ) a group by a.mon
 ) b on a.mon = b.mon
-group by b.mon
+group by a.mon
+) ;
+
+use constant LATEST_ORDER => qq(
+    select max(posted_dt) latest_order from financial_shipment_events
 ) ;
 
 use constant LATEST_INVENTORY => qq(
@@ -104,7 +107,10 @@ print $cgi->redirect( -url=>"/sku.cgi?SKU=$sku")                 if( defined $sk
 print $cgi->redirect( -url=>"/order.cgi?SOURCE_ORDER_ID=$order") if( defined $order ) ;
 
 print $cgi->header;
-print $cgi->start_html( -title => "MKP Products Homepage", -style => {'src'=>'http://prod.mkpproducts.com/style.css'} );
+print $cgi->start_html( -title => "MKP Products Homepage",
+                        -style => {'src'=>'http://prod.mkpproducts.com/style.css'},
+                        -head => [$cgi->Link({-rel=>'shortcut icon',
+                                              -href=>'favicon.png'})]);
 
 my $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
                        "mkp_reporter",
@@ -119,12 +125,19 @@ my $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
     print $cgi->i($cgi->b("Latest ")) ;
     print $cgi->i($cgi->b(" inventory: ") . $row->{latest_report}) ;
 }
+{
+    my $latest_sth = $dbh->prepare(${\LATEST_ORDER}) ;
+    $latest_sth->execute() or die $DBI::errstr ;
+    my $row = $latest_sth->fetchrow_hashref() ;
+
+    print $cgi->i($cgi->b(" order: ") . $row->{latest_order} . " ET") ;
+}
 
 my $s_sth = $dbh->prepare(${\TRAILING_DAY_SALES}) ;
 my $days = 7 ;
 $s_sth->execute($days, $days, $days) or die $DBI::errstr ;
 
-print $cgi->h3("Trailing $days Sales Flash") ;
+print $cgi->h3("Trailing $days Days Sales Flash") ;
 print "<TABLE><TR>"       .
       "<TH>Date</TH>"     .
       "<TH>Sales</TH>"    .
@@ -137,27 +150,28 @@ while (my $ref = $s_sth->fetchrow_hashref())
 {
     print "<TR>\n" ;
     print "<TD class=string>$ref->{date} </TD>\n" ;
-    print "<TD class=number" . &add_neg_tag($ref->{sales})    . ">" . &format_currency($ref->{sales},2)    . "</TD>\n" ;
-    print "<TD class=number" . &add_neg_tag($ref->{fees})     . ">" . &format_currency($ref->{fees},2)     . "</TD>\n" ;
-    print "<TD class=number" . &add_neg_tag($ref->{cogs})     . ">" . &format_currency($ref->{cogs},2)     . "</TD>\n" ;
-    print "<TD class=number" . &add_neg_tag($ref->{expenses}) . ">" . &format_currency($ref->{expenses},2) . "</TD>\n" ;
-    print "<TD class=number" . &add_neg_tag($ref->{total})    . ">" . &format_currency($ref->{total},2)    . "</TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{sales})    . ">" . &format_currency($ref->{sales})    . "</TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{fees})     . ">" . &format_currency($ref->{fees})     . "</TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{cogs})     . ">" . &format_currency($ref->{cogs})     . "</TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{expenses}) . ">" . &format_currency($ref->{expenses}) . "</TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{total})    . ">" . &format_currency($ref->{total})    . "</TD>\n" ;
     print "</TR>\n" ;
 }
 my $mtd_sth = $dbh->prepare(${\MTD_SALES}) ;
-$mtd_sth->execute() or die $DBI::errstr ;
+$mtd_sth->execute(30,30,30) or die $DBI::errstr ;
 my $mtd_row = $mtd_sth->fetchrow_hashref() ;
 print "<TR>\n" ;
-print "<TD class=string>MTD</TD>\n" ;
-print "<TD class=number" . &add_neg_tag($mtd_row->{sales})    . ">" . &format_currency($mtd_row->{sales},2)    . "</TD>\n" ;
-print "<TD class=number" . &add_neg_tag($mtd_row->{fees})     . ">" . &format_currency($mtd_row->{fees},2)     . "</TD>\n" ;
-print "<TD class=number" . &add_neg_tag($mtd_row->{cogs})     . ">" . &format_currency($mtd_row->{cogs},2)     . "</TD>\n" ;
-print "<TD class=number" . &add_neg_tag($mtd_row->{expenses}) . ">" . &format_currency($mtd_row->{expenses},2) . "</TD>\n" ;
-print "<TD class=number" . &add_neg_tag($mtd_row->{total})    . ">" . &format_currency($mtd_row->{total},2)    . "</TD>\n" ;
+print "<TD class=string>Trailing 30 Days</TD>\n" ;
+print "<TD class=number" . &add_neg_tag($mtd_row->{sales})    . ">" . &format_currency($mtd_row->{sales})    . "</TD>\n" ;
+print "<TD class=number" . &add_neg_tag($mtd_row->{fees})     . ">" . &format_currency($mtd_row->{fees})     . "</TD>\n" ;
+print "<TD class=number" . &add_neg_tag($mtd_row->{cogs})     . ">" . &format_currency($mtd_row->{cogs})     . "</TD>\n" ;
+print "<TD class=number" . &add_neg_tag($mtd_row->{expenses}) . ">" . &format_currency($mtd_row->{expenses}) . "</TD>\n" ;
+print "<TD class=number" . &add_neg_tag($mtd_row->{total})    . ">" . &format_currency($mtd_row->{total})    . "</TD>\n" ;
 print "</TR>\n" ;
-print "</TABLE><br><br>\n" ;
+print "</TABLE>\n" ;
 $s_sth->finish() ;
 
+print $cgi->br() ;
 print $cgi->a({href => "/pl.cgi"}, "Profit and Loss Statement") ; print " " ;
 print $cgi->a({href => "/pl.cgi?granularity=WEEKLY"}, "(weekly)") ;
 print $cgi->br() ;
@@ -166,6 +180,8 @@ print $cgi->br() ;
 print $cgi->a({href => "/newbuy.cgi"}, "SKU Buying" ) ;
 print $cgi->br() ;
 print $cgi->a({href => "/feg.cgi"}, "Financial Event Groups" ) ;
+print $cgi->br() ;
+print $cgi->a({href => "/userviews.cgi"}, "User Statistics" ) ;
 print $cgi->br() ;
 print $cgi->br() ;
 
