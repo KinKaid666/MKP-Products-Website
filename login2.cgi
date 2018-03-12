@@ -19,7 +19,7 @@ $sth->execute($user);
 if (my $rec = $sth->fetchrow_hashref) {
     my $salt = substr($rec->{password}, 0, 2);
     if ($rec->{password} ne crypt($pass, $salt) ) {
-        &dienice(qq(You entered the wrong password. If you've forgotten your password, <a href="forgotpass.html">Click here to reset it</a>.));
+        &dienice(qq(You entered the wrong password.));
     }
     $username = $rec->{username};
 } else {

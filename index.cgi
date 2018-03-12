@@ -183,6 +183,8 @@ print $cgi->a({href => "/feg.cgi"}, "Financial Event Groups" ) ;
 print $cgi->br() ;
 print $cgi->a({href => "/userviews.cgi"}, "User Statistics" ) ;
 print $cgi->br() ;
+print $cgi->a({href => "/inbound.cgi"}, "Inbound Shipments" ) ;
+print $cgi->br() ;
 print $cgi->br() ;
 
 print $cgi->start_form(
