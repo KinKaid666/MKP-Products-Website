@@ -48,7 +48,7 @@ print $cgi->start_html( -title => "MKP Products Financials",
     {
         print "<TR>\n" ;
         print "<TD class=string>$ref->{realname}     </TD>\n" ;
-        print "<TD class=string>$ref->{page}         </TD>\n" ;
+        print "<TD class=string><a href=$ref->{page}>$ref->{page}</a></TD>\n" ;
         print "<TD class=string>$ref->{remote_ip}    </TD>\n" ;
         print "<TD class=string>$ref->{creation_time}</TD>\n" ;
         print "</TR>\n" ;
@@ -68,7 +68,7 @@ print $cgi->start_html( -title => "MKP Products Financials",
     while (my $ref = $s_sth->fetchrow_hashref())
     {
         print "<TR>\n" ;
-        print "<TD class=string>$ref->{page} </TD>\n" ;
+        print "<TD class=string><a href=$ref->{page}>$ref->{page}</a></TD>\n" ;
         print "<TD class=string>$ref->{views}</TD>\n" ;
         print "</TR>\n" ;
     }
@@ -87,7 +87,7 @@ print $cgi->start_html( -title => "MKP Products Financials",
     while (my $ref = $s_sth->fetchrow_hashref())
     {
         print "<TR>\n" ;
-        print "<TD class=string>$ref->{sku}  </TD>\n" ;
+        print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>\n" ;
         print "<TD class=string>$ref->{views}</TD>\n" ;
         print "</TR>\n" ;
     }
