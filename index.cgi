@@ -94,7 +94,7 @@ use constant LATEST_ORDER => qq(
 ) ;
 
 use constant LATEST_INVENTORY => qq(
-    select date_format(max(report_date),"%Y-%m-%d") latest_report from onhand_inventory_reports
+    select max(latest_update) latest_report from realtime_inventory
 ) ;
 
 my $cgi = CGI->new() ;
@@ -183,7 +183,8 @@ print $cgi->a({href => "/feg.cgi"}, "Financial Event Groups" ) ;
 print $cgi->br() ;
 print $cgi->a({href => "/userviews.cgi"}, "User Statistics" ) ;
 print $cgi->br() ;
-print $cgi->a({href => "/inbound.cgi"}, "Inbound Shipments" ) ;
+print $cgi->a({href => "/inbound.cgi"}, "Inbound Shipments" ) ; print " " ;
+print $cgi->a({href => "/inbound.cgi?showclosed=1"}, "(incl closed)" ) ;
 print $cgi->br() ;
 print $cgi->br() ;
 

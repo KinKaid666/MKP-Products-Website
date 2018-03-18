@@ -22,22 +22,22 @@ use MKPUser ;
 use constant SKU_PNL_SELECT_STATEMENT => qq(
     select min(posted_dt) oldest_order
            ,so.sku
+           ,ri.source_name
+           ,ri.quantity_instock
+           ,ri.quantity_total
            ,ifnull(acts.active,0) is_active
-           ,ifnull(last_onhand_inventory_report.source_name, "N/A") source_name
-           ,ifnull(last_onhand_inventory_report.condition_name, "N/A") condition_name
-           ,ifnull(last_onhand_inventory_report.quantity, 0) quantity
            ,count(distinct so.source_order_id      ) order_count
            ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) unit_count
            ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
                    ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/ 7) weekly_velocity
-           ,ifnull(last_onhand_inventory_report.quantity, 0) /
+           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
+           ,ifnull(ri.quantity_total, 0) /
                    (sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
                    ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/7)) woc
-           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
-           , sum(promotional_rebates                ) +
-                 sum(marketplace_facilitator_tax        ) +
-                 sum(other_fees                         ) +
-                 sum(so.selling_fees                    ) selling_fees
+           ,sum(promotional_rebates                ) +
+                sum(marketplace_facilitator_tax        ) +
+                sum(other_fees                         ) +
+                sum(so.selling_fees                    ) selling_fees
            ,sum(so.fba_fees                        ) fba_fees
            ,sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
            ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) +
@@ -55,21 +55,13 @@ use constant SKU_PNL_SELECT_STATEMENT => qq(
             sc.end_date > so.posted_dt)
       left outer join active_sources acts
         on acts.sku = so.sku
-      left outer join (
-            select ohi.sku
-                   ,ohi.report_date
-                   ,ohi.source_name
-                   ,ohi.condition_name
-                   ,ohi.quantity
-              from onhand_inventory_reports ohi
-             where report_date = ( select max(report_date) from onhand_inventory_reports )
-          ) last_onhand_inventory_report
-        on last_onhand_inventory_report.sku = so.sku
+      left outer join realtime_inventory ri
+        on ri.sku = so.sku
      where so.posted_dt > NOW() - INTERVAL ? DAY
      group by sku
-              ,last_onhand_inventory_report.source_name
-              ,last_onhand_inventory_report.condition_name
-              ,last_onhand_inventory_report.quantity
+              ,ri.source_name
+              ,ri.quantity_instock
+              ,ri.quantity_total
      order by contrib_margin
 ) ;
 
@@ -131,8 +123,8 @@ print "<TABLE id=\"pnl\">"           .
       "<TH onclick=\"sortTable(0)\" style=\"cursor:pointer\">Ordest Order</TH>"         .
       "<TH onclick=\"sortTable(1)\" style=\"cursor:pointer\">SKU</TH>"                  .
       "<TH onclick=\"sortTable(2)\" style=\"cursor:pointer\">Source of Inventory</TH>"  .
-      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">Condition</TH>"            .
-      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">On Hand Quantity</TH>"     .
+      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">In-stock Quantity</TH>"    .
+      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">Total Quantity</TH>"       .
       "<TH onclick=\"sortTable(5)\" style=\"cursor:pointer\">Order Count</TH>"          .
       "<TH onclick=\"sortTable(6)\" style=\"cursor:pointer\">Unit Count</TH>"           .
       "<TH onclick=\"sortTable(7)\" style=\"cursor:pointer\">Weekly Velocity</TH>"      .
@@ -166,44 +158,44 @@ while (my $ref = $s_sth->fetchrow_hashref())
     {
         print "<TD class=string><a href=http://$ref->{source_name}>$ref->{source_name}</a></TD>" ;
     }
-    print "<TD class=string>$ref->{condition_name}</TD>" ;
-    print "<TD class=number>" . &format_integer($ref->{quantity})          . "</TD>" ;
+    print "<TD class=number>" . &format_integer($ref->{quantity_instock})  . "</TD>" ;
+    print "<TD class=number>" . &format_integer($ref->{quantity_total})    . "</TD>" ;
     print "<TD class=number>" . &format_integer($ref->{order_count})       . "</TD>" ;
     print "<TD class=number>" . &format_integer($ref->{unit_count})        . "</TD>" ;
     print "<TD class=number>" . &format_decimal($ref->{weekly_velocity},2) . "</TD>" ;
-    print "<TD class=number id=" . &get_color_code($ref->{woc}) . ">" . &format_decimal($ref->{woc},2)             . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{product_sales})     . ">" . &format_currency($ref->{product_sales})                           . "</TD>\n" ;
+    print "<TD class=number id=" . &get_color_code($ref->{woc}) . ">" . &format_decimal($ref->{woc},2) . "</TD>" ;
+    print "<TD class=number" . &add_neg_tag($ref->{product_sales}) . ">" . &format_currency($ref->{product_sales}) . "</TD>\n" ;
     if($ref->{product_sales} == 0 or $ref->{unit_count} == 0)
     {
         print "<TD class=number>NaN</TD>\n" ;
-        print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_currency($ref->{selling_fees})                            . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_currency($ref->{selling_fees})   . "</TD>\n" ;
         print "<TD class=number>NaN</TD>\n" ;
         print "<TD class=number>NaN</TD>\n" ;
-        print "<TD class=number" . &add_neg_tag($ref->{fba_fees})          . ">" . &format_currency($ref->{fba_fees})                                . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{fba_fees})          . ">" . &format_currency($ref->{fba_fees})       . "</TD>\n" ;
         print "<TD class=number>NaN</TD>\n" ;
         print "<TD class=number>NaN</TD>\n" ;
-        print "<TD class=number" . &add_neg_tag($ref->{cogs})              . ">" . &format_currency($ref->{cogs})                                    . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{cogs})              . ">" . &format_currency($ref->{cogs})           . "</TD>\n" ;
         print "<TD class=number>NaN</TD>\n" ;
         print "<TD class=number>NaN</TD>\n" ;
-        print "<TD class=number" . &add_neg_tag($ref->{contrib_margin})    . ">" . &format_currency($ref->{contrib_margin})                          . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{contrib_margin})    . ">" . &format_currency($ref->{contrib_margin}) . "</TD>\n" ;
         print "<TD class=number>NaN</TD>\n" ;
         print "<TD class=number>NaN</TD>\n" ;
     }
     else
     {
-        print "<TD class=number" . &add_neg_tag($ref->{product_sales})     . ">" . &format_currency($ref->{product_sales}/$ref->{unit_count},2)      . "</TD>\n" ;
-        print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_currency($ref->{selling_fees})                            . "</TD>\n" ;
-        print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_currency($ref->{selling_fees}/$ref->{unit_count},2)       . "</TD>\n" ;
-        print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_percent($ref->{selling_fees}/$ref->{product_sales},1)     . "</TD>\n" ;
-        print "<TD class=number" . &add_neg_tag($ref->{fba_fees})          . ">" . &format_currency($ref->{fba_fees})                                . "</TD>\n" ;
-        print "<TD class=number" . &add_neg_tag($ref->{fba_fees})          . ">" . &format_currency($ref->{fba_fees}/$ref->{unit_count},2)           . "</TD>\n" ;
-        print "<TD class=number" . &add_neg_tag($ref->{fba_fees})          . ">" . &format_percent($ref->{fba_fees}/$ref->{product_sales},1)         . "</TD>\n" ;
-        print "<TD class=number" . &add_neg_tag($ref->{cogs})              . ">" . &format_currency($ref->{cogs})                                    . "</TD>\n" ;
-        print "<TD class=number" . &add_neg_tag($ref->{cogs})              . ">" . &format_currency($ref->{cogs}/$ref->{unit_count},2)               . "</TD>\n" ;
-        print "<TD class=number" . &add_neg_tag($ref->{cogs})              . ">" . &format_percent($ref->{cogs}/$ref->{product_sales},1)             . "</TD>\n" ;
-        print "<TD class=number" . &add_neg_tag($ref->{contrib_margin})    . ">" . &format_currency($ref->{contrib_margin})                          . "</TD>\n" ;
-        print "<TD class=number" . &add_neg_tag($ref->{contrib_margin})    . ">" . &format_currency($ref->{contrib_margin}/$ref->{unit_count},2)     . "</TD>\n" ;
-        print "<TD class=number" . &add_neg_tag($ref->{contrib_margin})    . ">" . &format_percent($ref->{contrib_margin}/$ref->{product_sales},1)   . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{product_sales})     . ">" . &format_currency($ref->{product_sales}/$ref->{unit_count},2)    . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_currency($ref->{selling_fees})                          . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_currency($ref->{selling_fees}/$ref->{unit_count},2)     . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{selling_fees})      . ">" . &format_percent($ref->{selling_fees}/$ref->{product_sales},1)   . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{fba_fees})          . ">" . &format_currency($ref->{fba_fees})                              . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{fba_fees})          . ">" . &format_currency($ref->{fba_fees}/$ref->{unit_count},2)         . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{fba_fees})          . ">" . &format_percent($ref->{fba_fees}/$ref->{product_sales},1)       . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{cogs})              . ">" . &format_currency($ref->{cogs})                                  . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{cogs})              . ">" . &format_currency($ref->{cogs}/$ref->{unit_count},2)             . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{cogs})              . ">" . &format_percent($ref->{cogs}/$ref->{product_sales},1)           . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{contrib_margin})    . ">" . &format_currency($ref->{contrib_margin})                        . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{contrib_margin})    . ">" . &format_currency($ref->{contrib_margin}/$ref->{unit_count},2)   . "</TD>\n" ;
+        print "<TD class=number" . &add_neg_tag($ref->{contrib_margin})    . ">" . &format_percent($ref->{contrib_margin}/$ref->{product_sales},1) . "</TD>\n" ;
     }
     print "</TR>" ;
 }

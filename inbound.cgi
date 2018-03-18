@@ -33,6 +33,7 @@ use constant INBOUND_SHIPMENTS_SQL => qq(
 
 my $username = &validate() ;
 my $cgi = CGI->new() ;
+my $showclosed = $cgi->param('showclosed') || 0 ;
 
 print $cgi->header;
 print $cgi->start_html( -title => "MKP Products Inbound Shipments",
@@ -59,6 +60,7 @@ print "<TABLE><TR>"            .
       "</TR> \n" ;
 while (my $ref = $s_sth->fetchrow_hashref())
 {
+    next if not $showclosed and $ref->{condition_name} eq "CLOSED" ;
     print "<TR>\n" ;
     print "<TD class=number>$ref->{id}               </TD>\n" ;
     print "<TD class=string>$ref->{condition_name}   </TD>\n" ;

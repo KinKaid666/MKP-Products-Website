@@ -34,6 +34,33 @@ use constant SKU_COST_DETAILS_SELECT_STATEMENT => qq(
      order by sc.start_date
 ) ;
 
+use constant SKU_ONHAND_INVENTORY_STATEMENT => qq(
+    select sku
+           , source_name
+           , quantity_instock
+           , quantity_total
+           , instock_date
+      from realtime_inventory ri
+     where ri.sku = ?
+) ;
+
+use constant SKU_INBOUND_INVENTORY_STATEMENT => qq(
+    select ib.id
+           , ib.condition_name
+           , ib.ext_shipment_id
+           , ib.ext_shipment_name
+           , ib.destination
+           , isi.sku
+           , isi.quantity_shipped shipped
+           , isi.quantity_received received
+       from inbound_shipments ib
+       join inbound_shipment_items isi
+         on isi.inbound_shipment_id = ib.id
+      where isi.sku = ?
+        and ib.condition_name != 'CLOSED'
+        and isi.quantity_shipped > isi.quantity_received
+) ;
+
 use constant SKU_PNL_SELECT_STATEMENT => qq(
     select date_format(so.posted_dt,"%Y") year
            ,date_format(so.posted_dt, "%m") month
@@ -69,20 +96,18 @@ use constant SKU_PNL_SELECT_STATEMENT => qq(
              ,sku
 ) ;
 
-use constant SKU_OHI_SELECT_STATEMENT => qq(
+use constant SKU_PRODUCTIVITY_SELECT_STATEMENT => qq(
     select min(posted_dt) oldest_order
            ,so.sku
-           ,ifnull(last_onhand_inventory_report.source_name, "N/A") source_name
-           ,ifnull(last_onhand_inventory_report.condition_name, "N/A") condition_name
-           ,ifnull(last_onhand_inventory_report.quantity, 0) quantity
            ,count(distinct so.source_order_id      ) order_count
            ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) unit_count
            ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
                    ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/ 7) weekly_velocity
-           ,ifnull(last_onhand_inventory_report.quantity, 0) /
-                (sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
-                     ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/7)) woc
            ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
+           ,ifnull(ri.quantity_total, 0) /
+                   (sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
+                   ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/7)) woc
+
            , sum(promotional_rebates                ) +
                  sum(marketplace_facilitator_tax        ) +
                  sum(other_fees                         ) +
@@ -101,22 +126,12 @@ use constant SKU_OHI_SELECT_STATEMENT => qq(
        and sc.start_date < so.posted_dt
        and (sc.end_date is null or
             sc.end_date > so.posted_dt)
-      left outer join (
-            select ohi.sku
-                   ,ohi.report_date
-                   ,ohi.source_name
-                   ,ohi.condition_name
-                   ,ohi.quantity
-              from onhand_inventory_reports ohi
-             where report_date = ( select max(report_date) from onhand_inventory_reports )
-          ) last_onhand_inventory_report
-        on last_onhand_inventory_report.sku = so.sku
+      left outer join realtime_inventory ri
+        on ri.sku = so.sku
      where so.posted_dt > NOW() - INTERVAL ? DAY
        and so.sku = ?
      group by sku
-              ,last_onhand_inventory_report.source_name
-              ,last_onhand_inventory_report.condition_name
-              ,last_onhand_inventory_report.quantity
+              ,ri.quantity_total
      order by contrib_margin
 ) ;
 
@@ -202,16 +217,72 @@ while (my $ref = $sku_cost_sth->fetchrow_hashref())
 print "</TABLE>\n" ;
 $sku_cost_sth->finish() ;
 
-my $ohi_sth = $dbh->prepare(${\SKU_OHI_SELECT_STATEMENT}) ;
-$ohi_sth->execute($days, $days, $days, $days, $days, $sku) or die $DBI::errstr ;
 print "<h3>Inventory</h3>\n" ;
+print "<TABLE><TR>"           .
+      "<TH>SKU</TH>"          .
+      "<TH>Source Name</TH>"  .
+      "<TH>In-stock Qty</TH>" .
+      "<TH>Total Qty</TH>"    .
+      "<TH>In-stock Est</TH>" .
+      "</TR> \n" ;
+my $inv_sth = $dbh->prepare(${\SKU_ONHAND_INVENTORY_STATEMENT}) ;
+$inv_sth->execute($sku) or die $DBI::errstr ;
+while (my $ref = $inv_sth->fetchrow_hashref())
+{
+    print "<TR>\n" ;
+    print "<TD class=number>$ref->{sku}</TD>\n" ;
+    if(not $ref->{source_name} =~ m/www/)
+    {
+        print "<TD class=string>$ref->{source_name}</TD>" ;
+    }
+    else
+    {
+        print "<TD class=string><a href=http://$ref->{source_name}>$ref->{source_name}</a></TD>" ;
+    }
+    print "<TD class=number>$ref->{quantity_instock}</TD>\n" ;
+    print "<TD class=number>$ref->{quantity_total}  </TD>\n" ;
+    print "<TD class=string>$ref->{instock_date}    </TD>\n" ;
+    print "</TR>\n" ;
+}
+print "</TABLE>\n" ;
+$inv_sth->finish() ;
+
+print "<h3>On-order Inventory</h3>\n" ;
+print "<TABLE><TR>"            .
+      "<TH>Id</TH>"            .
+      "<TH>Condition</TH>"     .
+      "<TH>Shipment Id</TH>"   .
+      "<TH>Shipment Name</TH>" .
+      "<TH>Destination</TH>"   .
+      "<TH>SKU</TH>"           .
+      "<TH>Shipped</TH>"       .
+      "<TH>Received</TH>"      .
+      "</TR> \n" ;
+my $inb_sth = $dbh->prepare(${\SKU_INBOUND_INVENTORY_STATEMENT}) ;
+$inb_sth->execute($sku) or die $DBI::errstr ;
+while (my $ref = $inb_sth->fetchrow_hashref())
+{
+    print "<TR>\n" ;
+    print "<TD class=number>$ref->{id}               </TD>\n" ;
+    print "<TD class=string>$ref->{condition_name}   </TD>\n" ;
+    print "<TD class=string><a href=inbound-details.cgi?id=$ref->{ext_shipment_id}>$ref->{ext_shipment_id}</a></TD>\n" ;
+    print "<TD class=string>$ref->{ext_shipment_name}</TD>\n" ;
+    print "<TD class=string>$ref->{destination}      </TD>\n" ;
+    print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>\n" ;
+    print "<TD class=number>$ref->{shipped}          </TD>\n" ;
+    print "<TD class=number>$ref->{received}         </TD>\n" ;
+    print "</TR>\n" ;
+}
+print "</TABLE>\n" ;
+$inb_sth->finish() ;
+
+my $ohi_sth = $dbh->prepare(${\SKU_PRODUCTIVITY_SELECT_STATEMENT}) ;
+$ohi_sth->execute($days, $days, $days, $days, $days, $sku) or die $DBI::errstr ;
+print "<h3>Inventory Productivity</h3>\n" ;
 print "<TABLE id=\"pnl\">"           .
       "<TBODY><TR>"                  .
       "<TH>Ordest Order</TH>"        .
       "<TH>SKU</TH>"                 .
-      "<TH>Source of Inventory</TH>" .
-      "<TH>Condition</TH>"           .
-      "<TH>On Hand Quantity</TH>"    .
       "<TH>Order Count</TH>"         .
       "<TH>Unit Count</TH>"          .
       "<TH>Weekly Velocity</TH>"     .
@@ -227,16 +298,6 @@ while (my $ref = $ohi_sth->fetchrow_hashref())
     print "<TR>" ;
     print "<TD class=string>$ref->{oldest_order}</TD>" ;
     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
-    if(not $ref->{source_name} =~ m/www/)
-    {
-        print "<TD class=string>$ref->{source_name}</TD>" ;
-    }
-    else
-    {
-        print "<TD class=string><a href=http://$ref->{source_name}>$ref->{source_name}</a></TD>" ;
-    }
-    print "<TD class=string>$ref->{condition_name}</TD>" ;
-    print "<TD class=number>" . &format_integer($ref->{quantity})                    . "</TD>" ;
     print "<TD class=number>" . &format_integer($ref->{order_count})                    . "</TD>" ;
     print "<TD class=number>" . &format_integer($ref->{unit_count})                     . "</TD>" ;
     print "<TD class=number>" . &format_decimal($ref->{weekly_velocity},2)                     . "</TD>" ;
