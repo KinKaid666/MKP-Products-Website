@@ -22,6 +22,7 @@ use MKPUser ;
 use constant SKU_PNL_SELECT_STATEMENT => qq(
     select min(posted_dt) oldest_order
            ,so.sku
+           ,v.vendor_name
            ,ri.source_name
            ,ri.quantity_instock
            ,ri.quantity_total
@@ -57,8 +58,13 @@ use constant SKU_PNL_SELECT_STATEMENT => qq(
         on acts.sku = so.sku
       left outer join realtime_inventory ri
         on ri.sku = so.sku
+      join skus s
+        on sc.sku = s.sku
+      join vendors v
+        on v.vendor_name = s.vendor_name
      where so.posted_dt > NOW() - INTERVAL ? DAY
      group by sku
+              ,v.vendor_name
               ,ri.source_name
               ,ri.quantity_instock
               ,ri.quantity_total
@@ -122,27 +128,28 @@ print "<TABLE id=\"pnl\">"           .
       "<TBODY><TR>"                  .
       "<TH onclick=\"sortTable(0)\" style=\"cursor:pointer\">Ordest Order</TH>"         .
       "<TH onclick=\"sortTable(1)\" style=\"cursor:pointer\">SKU</TH>"                  .
-      "<TH onclick=\"sortTable(2)\" style=\"cursor:pointer\">Source of Inventory</TH>"  .
-      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">In-stock Quantity</TH>"    .
-      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">Total Quantity</TH>"       .
-      "<TH onclick=\"sortTable(5)\" style=\"cursor:pointer\">Order Count</TH>"          .
-      "<TH onclick=\"sortTable(6)\" style=\"cursor:pointer\">Unit Count</TH>"           .
-      "<TH onclick=\"sortTable(7)\" style=\"cursor:pointer\">Weekly Velocity</TH>"      .
-      "<TH onclick=\"sortTable(8)\" style=\"cursor:pointer\">Weeks of Coverage</TH>"    .
-      "<TH onclick=\"sortTable(9)\" style=\"cursor:pointer\">Sales</TH>"                .
-      "<TH onclick=\"sortTable(10)\" style=\"cursor:pointer\">per Unit</TH>"            .
-      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">Selling Fees</TH>"        .
-      "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">per Unit</TH>"            .
-      "<TH onclick=\"sortTable(13)\" style=\"cursor:pointer\">as Pct</TH>"              .
-      "<TH onclick=\"sortTable(14)\" style=\"cursor:pointer\">FBA Fees</TH>"            .
-      "<TH onclick=\"sortTable(15)\" style=\"cursor:pointer\">per Unit</TH>"            .
-      "<TH onclick=\"sortTable(16)\" style=\"cursor:pointer\">as Pct</TH>"              .
-      "<TH onclick=\"sortTable(17)\" style=\"cursor:pointer\">Cogs</TH>"                .
-      "<TH onclick=\"sortTable(18)\" style=\"cursor:pointer\">per Unit</TH>"            .
-      "<TH onclick=\"sortTable(19)\" style=\"cursor:pointer\">as Pct</TH>"              .
-      "<TH onclick=\"sortTable(20)\" style=\"cursor:pointer\">Contribution Margin</TH>" .
-      "<TH onclick=\"sortTable(21)\" style=\"cursor:pointer\">per Unit</TH>"            .
-      "<TH onclick=\"sortTable(22)\" style=\"cursor:pointer\">as Pct</TH>"              .
+      "<TH onclick=\"sortTable(2)\" style=\"cursor:pointer\">Vendor</TH>"               .
+      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">Source of Inventory</TH>"  .
+      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">In-stock Quantity</TH>"    .
+      "<TH onclick=\"sortTable(5)\" style=\"cursor:pointer\">Total Quantity</TH>"       .
+      "<TH onclick=\"sortTable(6)\" style=\"cursor:pointer\">Order Count</TH>"          .
+      "<TH onclick=\"sortTable(7)\" style=\"cursor:pointer\">Unit Count</TH>"           .
+      "<TH onclick=\"sortTable(8)\" style=\"cursor:pointer\">Weekly Velocity</TH>"      .
+      "<TH onclick=\"sortTable(9)\" style=\"cursor:pointer\">Weeks of Coverage</TH>"    .
+      "<TH onclick=\"sortTable(10)\" style=\"cursor:pointer\">Sales</TH>"               .
+      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">per Unit</TH>"            .
+      "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">Selling Fees</TH>"        .
+      "<TH onclick=\"sortTable(13)\" style=\"cursor:pointer\">per Unit</TH>"            .
+      "<TH onclick=\"sortTable(14)\" style=\"cursor:pointer\">as Pct</TH>"              .
+      "<TH onclick=\"sortTable(15)\" style=\"cursor:pointer\">FBA Fees</TH>"            .
+      "<TH onclick=\"sortTable(16)\" style=\"cursor:pointer\">per Unit</TH>"            .
+      "<TH onclick=\"sortTable(17)\" style=\"cursor:pointer\">as Pct</TH>"              .
+      "<TH onclick=\"sortTable(18)\" style=\"cursor:pointer\">Cogs</TH>"                .
+      "<TH onclick=\"sortTable(19)\" style=\"cursor:pointer\">per Unit</TH>"            .
+      "<TH onclick=\"sortTable(20)\" style=\"cursor:pointer\">as Pct</TH>"              .
+      "<TH onclick=\"sortTable(21)\" style=\"cursor:pointer\">Contribution Margin</TH>" .
+      "<TH onclick=\"sortTable(22)\" style=\"cursor:pointer\">per Unit</TH>"            .
+      "<TH onclick=\"sortTable(23)\" style=\"cursor:pointer\">as Pct</TH>"              .
       "</TR>\n" ;
 while (my $ref = $s_sth->fetchrow_hashref())
 {
@@ -150,6 +157,7 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "<TR>" ;
     print "<TD class=string>$ref->{oldest_order}</TD>" ;
     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
+    print "<TD class=string>$ref->{vendor_name}</TD>" ;
     if(not $ref->{source_name} =~ m/www/)
     {
         print "<TD class=string>$ref->{source_name}</TD>" ;
