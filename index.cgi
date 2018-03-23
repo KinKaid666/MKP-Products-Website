@@ -89,6 +89,17 @@ select a.mon
 group by a.mon
 ) ;
 
+use constant TOTAL_INVENTORY_COST => qq(
+    select sum(ri.quantity_instock * sc.cost) instock_cost
+           ,sum(ri.quantity_total * sc.cost) total_cost
+      from realtime_inventory ri
+      join sku_costs sc
+        on ri.sku = sc.sku
+       and sc.start_date < now()
+       and (sc.end_date is null or sc.end_date > now())
+     where ri.quantity_total > 0
+) ;
+
 use constant LATEST_ORDER => qq(
     select max(posted_dt) latest_order from financial_shipment_events
 ) ;
@@ -157,6 +168,9 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "<TD class=number" . &add_neg_tag($ref->{total})    . ">" . &format_currency($ref->{total})    . "</TD>\n" ;
     print "</TR>\n" ;
 }
+$s_sth->finish() ;
+#
+# Put MTD sales
 my $mtd_sth = $dbh->prepare(${\MTD_SALES}) ;
 $mtd_sth->execute(30,30,30) or die $DBI::errstr ;
 my $mtd_row = $mtd_sth->fetchrow_hashref() ;
@@ -168,8 +182,24 @@ print "<TD class=number" . &add_neg_tag($mtd_row->{cogs})     . ">" . &format_cu
 print "<TD class=number" . &add_neg_tag($mtd_row->{expenses}) . ">" . &format_currency($mtd_row->{expenses}) . "</TD>\n" ;
 print "<TD class=number" . &add_neg_tag($mtd_row->{total})    . ">" . &format_currency($mtd_row->{total})    . "</TD>\n" ;
 print "</TR>\n" ;
+$mtd_sth->finish() ;
+
+#
+# Add Total Inventory
+my $inv_sth = $dbh->prepare(${\TOTAL_INVENTORY_COST}) ;
+$inv_sth->execute() or die $DBI::errstr ;
+my $inv_row = $inv_sth->fetchrow_hashref() ;
+print "<TR>\n" ;
+print "<TD class=string colspan=5>Inventory In-stock</TD>\n" ;
+print "<TD class=number>" . &format_currency($inv_row->{instock_cost},0) . "</TD>\n" ;
+print "</TR>\n" ;
+print "<TR>\n" ;
+print "<TD class=string colspan=5>Inventory Total</TD>\n" ;
+print "<TD class=number>" . &format_currency($inv_row->{total_cost},0) . "</TD>\n" ;
+print "</TR>\n" ;
 print "</TABLE>\n" ;
-$s_sth->finish() ;
+$inv_sth->finish() ;
+
 
 print $cgi->br() ;
 print $cgi->a({href => "/pl.cgi"}, "Profit and Loss Statement") ; print " " ;
@@ -185,6 +215,8 @@ print $cgi->a({href => "/userviews.cgi"}, "User Statistics" ) ;
 print $cgi->br() ;
 print $cgi->a({href => "/inbound.cgi"}, "Inbound Shipments" ) ; print " " ;
 print $cgi->a({href => "/inbound.cgi?showclosed=1"}, "(incl closed)" ) ;
+print $cgi->br() ;
+print $cgi->a({href => "/inventory.cgi"}, "Inventory" ) ;
 print $cgi->br() ;
 print $cgi->br() ;
 
