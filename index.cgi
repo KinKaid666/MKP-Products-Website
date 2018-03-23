@@ -182,19 +182,25 @@ print "<TD class=number" . &add_neg_tag($mtd_row->{cogs})     . ">" . &format_cu
 print "<TD class=number" . &add_neg_tag($mtd_row->{expenses}) . ">" . &format_currency($mtd_row->{expenses}) . "</TD>\n" ;
 print "<TD class=number" . &add_neg_tag($mtd_row->{total})    . ">" . &format_currency($mtd_row->{total})    . "</TD>\n" ;
 print "</TR>\n" ;
+print "</TABLE>\n" ;
 $mtd_sth->finish() ;
 
+print $cgi->h3("Inventory") ;
+print "<TABLE><TR>"       .
+      "<TH>Type</TH>"     .
+      "<TH>Total</TH>"    .
+      "</TR> \n" ;
 #
 # Add Total Inventory
 my $inv_sth = $dbh->prepare(${\TOTAL_INVENTORY_COST}) ;
 $inv_sth->execute() or die $DBI::errstr ;
 my $inv_row = $inv_sth->fetchrow_hashref() ;
 print "<TR>\n" ;
-print "<TD class=string colspan=5>Inventory In-stock</TD>\n" ;
+print "<TD class=string>In-stock</TD>\n" ;
 print "<TD class=number>" . &format_currency($inv_row->{instock_cost},0) . "</TD>\n" ;
 print "</TR>\n" ;
 print "<TR>\n" ;
-print "<TD class=string colspan=5>Inventory Total</TD>\n" ;
+print "<TD class=string>Total</TD>\n" ;
 print "<TD class=number>" . &format_currency($inv_row->{total_cost},0) . "</TD>\n" ;
 print "</TR>\n" ;
 print "</TABLE>\n" ;
