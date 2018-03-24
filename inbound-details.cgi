@@ -26,6 +26,7 @@ use constant INBOUND_SHIPMENT_ITEMS_SQL => qq(
        join inbound_shipment_items isi
          on isi.inbound_shipment_id = ib.id
       where ib.ext_shipment_id = ?
+      order by quantity_shipped desc
 ) ;
 
 my $username = &validate() ;
