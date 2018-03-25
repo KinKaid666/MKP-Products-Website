@@ -113,6 +113,7 @@ my $cgi = CGI->new() ;
 my $username = &validate() ;
 my $sku   = $cgi->param('sku') || undef ;
 my $order = $cgi->param('order') || undef ;
+my $velocity = 1 ;
 
 print $cgi->redirect( -url=>"/sku.cgi?SKU=$sku")                 if( defined $sku   ) ;
 print $cgi->redirect( -url=>"/order.cgi?SOURCE_ORDER_ID=$order") if( defined $order ) ;
@@ -169,10 +170,12 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "</TR>\n" ;
 }
 $s_sth->finish() ;
+
+my $mdays = 30 ;
 #
 # Put MTD sales
 my $mtd_sth = $dbh->prepare(${\MTD_SALES}) ;
-$mtd_sth->execute(30,30,30) or die $DBI::errstr ;
+$mtd_sth->execute($mdays, $mdays, $mdays) or die $DBI::errstr ;
 my $mtd_row = $mtd_sth->fetchrow_hashref() ;
 print "<TR>\n" ;
 print "<TD class=string>Trailing 30 Days</TD>\n" ;
@@ -186,9 +189,10 @@ print "</TABLE>\n" ;
 $mtd_sth->finish() ;
 
 print $cgi->h3("Inventory") ;
-print "<TABLE><TR>"       .
-      "<TH>Type</TH>"     .
-      "<TH>Total</TH>"    .
+print "<TABLE><TR>"              .
+      "<TH>Type</TH>"            .
+      "<TH>Total</TH>"           .
+      "<TH>Coverage (days)</TH>" .
       "</TR> \n" ;
 #
 # Add Total Inventory
@@ -198,10 +202,12 @@ my $inv_row = $inv_sth->fetchrow_hashref() ;
 print "<TR>\n" ;
 print "<TD class=string>In-stock</TD>\n" ;
 print "<TD class=number>" . &format_currency($inv_row->{instock_cost},0) . "</TD>\n" ;
+print "<TD class=number>" . &format_decimal(-1 * ($inv_row->{instock_cost}/($mtd_row->{cogs}/$mdays)),2) . "</TD>\n" ;
 print "</TR>\n" ;
 print "<TR>\n" ;
 print "<TD class=string>Total</TD>\n" ;
 print "<TD class=number>" . &format_currency($inv_row->{total_cost},0) . "</TD>\n" ;
+print "<TD class=number>" . &format_decimal(-1 * ($inv_row->{total_cost}/($mtd_row->{cogs}/$mdays)),2) . "</TD>\n" ;
 print "</TR>\n" ;
 print "</TABLE>\n" ;
 $inv_sth->finish() ;
