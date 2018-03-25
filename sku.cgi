@@ -35,12 +35,15 @@ use constant SKU_COST_DETAILS_SELECT_STATEMENT => qq(
 ) ;
 
 use constant SKU_ONHAND_INVENTORY_STATEMENT => qq(
-    select sku
-           , source_name
-           , quantity_instock
-           , quantity_total
-           , instock_date
+    select ri.sku
+           , ri.source_name
+           , a.sku_source_id
+           , ri.quantity_instock
+           , ri.quantity_total
+           , ri.instock_date
       from realtime_inventory ri
+      left outer join active_sources a
+        on ri.sku = a.sku
      where ri.sku = ?
 ) ;
 
@@ -187,7 +190,7 @@ $sku_details_sth->execute($sku) or die $DBI::errstr ;
 while (my $ref = $sku_details_sth->fetchrow_hashref())
 {
     print "<TR>" ;
-    print "<TD class=string><a href=https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=$ref->{sku}>$ref->{sku}</a></TD>" ;
+    print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
     print "<TD class=string>$ref->{description}</a></TD>" ;
     print "<TD class=string>$ref->{vendor_name}</TD>" ;
     print "<TD class=string>" . &nvl($ref->{vendor_description}) . "</TD>" ;
@@ -208,7 +211,7 @@ $sku_cost_sth->execute($sku) or die $DBI::errstr ;
 while (my $ref = $sku_cost_sth->fetchrow_hashref())
 {
     print "<TR>" ;
-    print "<TD class=string><a href=https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=$ref->{sku}>$ref->{sku}</a></TD>" ;
+    print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
     print "<TD class=number>" . &format_currency($ref->{cost},2) . "</TD>" ;
     print "<TD class=string>$ref->{start_date}</TD>" ;
     print "<TD class=string>" . (defined $ref->{end_date} ? $ref->{end_date} : "No end") . "</TD>" ;
@@ -218,19 +221,20 @@ print "</TABLE>\n" ;
 $sku_cost_sth->finish() ;
 
 print "<h3>Inventory</h3>\n" ;
-print "<TABLE><TR>"           .
-      "<TH>SKU</TH>"          .
-      "<TH>Source Name</TH>"  .
-      "<TH>In-stock Qty</TH>" .
-      "<TH>Total Qty</TH>"    .
-      "<TH>In-stock Est</TH>" .
+print "<TABLE><TR>"            .
+      "<TH>SKU</TH>"           .
+      "<TH>Source Name</TH>"   .
+      "<TH>SKU Source Id</TH>" .
+      "<TH>In-stock Qty</TH>"  .
+      "<TH>Total Qty</TH>"     .
+      "<TH>In-stock Est</TH>"  .
       "</TR> \n" ;
 my $inv_sth = $dbh->prepare(${\SKU_ONHAND_INVENTORY_STATEMENT}) ;
 $inv_sth->execute($sku) or die $DBI::errstr ;
 while (my $ref = $inv_sth->fetchrow_hashref())
 {
     print "<TR>\n" ;
-    print "<TD class=number>$ref->{sku}</TD>\n" ;
+    print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
     if(not $ref->{source_name} =~ m/www/)
     {
         print "<TD class=string>$ref->{source_name}</TD>" ;
@@ -239,6 +243,7 @@ while (my $ref = $inv_sth->fetchrow_hashref())
     {
         print "<TD class=string><a href=http://$ref->{source_name}>$ref->{source_name}</a></TD>" ;
     }
+    print "<TD class=string><a href=https://$ref->{source_name}/dp/$ref->{sku_source_id}>$ref->{sku_source_id}</a></TD>\n" ;
     print "<TD class=number>$ref->{quantity_instock}</TD>\n" ;
     print "<TD class=number>$ref->{quantity_total}  </TD>\n" ;
     print "<TD class=string>$ref->{instock_date}    </TD>\n" ;
@@ -341,7 +346,7 @@ while (my $ref = $pnl_sth->fetchrow_hashref())
     print "<TR>" ;
     print "<TD class=string>$ref->{year}</TD>" ;
     print "<TD class=string>$ref->{month}</TD>" ;
-    print "<TD class=string><a href=https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=$ref->{sku}>$ref->{sku}</a></TD>" ;
+    print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>\n" ;
     print "<TD class=number>" . &format_integer($ref->{order_count})     . "</TD>" ;
     print "<TD class=number>" . &format_integer($ref->{unit_count})      . "</TD>" ;
     print "<TD class=number" . &add_neg_tag($ref->{product_sales})       . ">" . &format_currency($ref->{product_sales})    . "</TD>\n" ;
@@ -408,7 +413,7 @@ while (my $ref = $s_sth->fetchrow_hashref())
 {
     print "<TR>" ;
     print "<TD class=string>$ref->{posted_dt}</TD>" ;
-    print "<TD class=string><a href=https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=$ref->{sku}>$ref->{sku}</a></TD>" ;
+    print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>\n" ;
     print "<TD class=string><a href=order.cgi?SOURCE_ORDER_ID=$ref->{source_order_id}>$ref->{source_order_id}</a></TD>" ;
     print "<TD class=string>$ref->{event_type}</TD>" ;
     print "<TD class=number>" . &format_integer($ref->{quantity})                . "</TD>" ;
