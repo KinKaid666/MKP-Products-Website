@@ -133,15 +133,15 @@ my $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
     $latest_sth->execute() or die $DBI::errstr ;
     my $row = $latest_sth->fetchrow_hashref() ;
 
-    print $cgi->i($cgi->b("Latest ")) ;
-    print $cgi->i($cgi->b(" inventory: ") . $row->{latest_report}) ;
+    print $cgi->small($cgi->i($cgi->b("Latest "))) ;
+    print $cgi->small($cgi->i($cgi->b(" inventory: ") . $row->{latest_report} . " ET")) ;
 }
 {
     my $latest_sth = $dbh->prepare(${\LATEST_ORDER}) ;
     $latest_sth->execute() or die $DBI::errstr ;
     my $row = $latest_sth->fetchrow_hashref() ;
 
-    print $cgi->i($cgi->b(" order: ") . $row->{latest_order} . " ET") ;
+    print $cgi->small($cgi->i($cgi->b(" order: ") . $row->{latest_order} . " ET")) ;
 }
 
 my $s_sth = $dbh->prepare(${\TRAILING_DAY_SALES}) ;
