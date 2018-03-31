@@ -19,9 +19,7 @@ use constant SKU_OHI_SELECT_STATEMENT => qq(
            ,ifnull(scp.vendor_sku,'Unknown') vendor_sku
            ,ifnull(scp.pack_size,1) pack_size
            ,ifnull(ri.source_name, "N/A") source_name
-           ,ifnull(ri.quantity_instock, 0) quantity_instock
            ,ifnull(ri.quantity_total, 0) quantity_total
-           ,ifnull(ri.quantity_total, 0) * sc.cost value
            ,sc.cost cost
            ,count(distinct so.source_order_id      ) order_count
            ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) unit_count
@@ -51,7 +49,6 @@ use constant SKU_OHI_SELECT_STATEMENT => qq(
               ,scp.pack_size
               ,sc.cost
               ,ri.source_name
-              ,ri.quantity_instock
               ,ri.quantity_total
      order by weekly_velocity desc
 ) ;
@@ -123,23 +120,19 @@ $ohi_sth->execute($days, $days, $days, $days, $days) or die $DBI::errstr ;
 
 print "<BR><TABLE id=\"pnl\">" .
       "<TBODY><TR>"            .
-      "<TH onclick=\"sortTable(0)\" style=\"cursor:pointer\">SKU</TH>"                  .
-      "<TH onclick=\"sortTable(1)\" style=\"cursor:pointer\">Vendor</TH>"               .
-      "<TH onclick=\"sortTable(2)\" style=\"cursor:pointer\">Vendor SKU</TH>"           .
-      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">Case Pack</TH>"            .
-      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">Source of Inventory</TH>"  .
-      "<TH onclick=\"sortTable(5)\" style=\"cursor:pointer\">In-stock Qty</TH>"         .
-      "<TH onclick=\"sortTable(6)\" style=\"cursor:pointer\">Total Qty</TH>"            .
-      "<TH onclick=\"sortTable(7)\" style=\"cursor:pointer\">On Hand \$</TH>"           .
-      "<TH onclick=\"sortTable(8)\" style=\"cursor:pointer\">Desired OH Units</TH>"     .
-      "<TH onclick=\"sortTable(9)\" style=\"cursor:pointer\">Desired OH\$</TH>"         .
-      "<TH onclick=\"sortTable(10)\" style=\"cursor:pointer\">Amount to Buy Units</TH>"  .
-      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">Amount to Buy Vendor Units</TH>"  .
-      "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">Amount to Buy \$</TH>"    .
-      "<TH onclick=\"sortTable(13)\" style=\"cursor:pointer\">Order Count</TH>"         .
-      "<TH onclick=\"sortTable(14)\" style=\"cursor:pointer\">Unit Count</TH>"          .
-      "<TH onclick=\"sortTable(15)\" style=\"cursor:pointer\">Weekly Velocity</TH>"     .
-      "<TH onclick=\"sortTable(16)\" style=\"cursor:pointer\">Weeks of Coverage</TH>"   .
+      "<TH onclick=\"sortTable(0)\" style=\"cursor:pointer\">SKU</TH>"                         .
+      "<TH onclick=\"sortTable(1)\" style=\"cursor:pointer\">Vendor</TH>"                      .
+      "<TH onclick=\"sortTable(2)\" style=\"cursor:pointer\">Vendor SKU</TH>"                  .
+      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">Case Pack</TH>"                   .
+      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">Source of Inventory</TH>"         .
+      "<TH onclick=\"sortTable(5)\" style=\"cursor:pointer\">Total Qty</TH>"                   .
+      "<TH onclick=\"sortTable(6)\" style=\"cursor:pointer\">Desired OH Units</TH>"            .
+      "<TH onclick=\"sortTable(7)\" style=\"cursor:pointer\">Desired OH\$</TH>"                .
+      "<TH onclick=\"sortTable(8)\" style=\"cursor:pointer\">Amount to Buy Units</TH>"        .
+      "<TH onclick=\"sortTable(9)\" style=\"cursor:pointer\">Amount to Buy Vendor Units</TH>" .
+      "<TH onclick=\"sortTable(10)\" style=\"cursor:pointer\">Amount to Buy \$</TH>"           .
+      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">Weekly Velocity</TH>"            .
+      "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">Weeks of Coverage</TH>"          .
       "</TR>\n" ;
 while (my $ref = $ohi_sth->fetchrow_hashref())
 {
@@ -168,16 +161,12 @@ while (my $ref = $ohi_sth->fetchrow_hashref())
     # convert to dollars
     my $dollars_to_buy = $units_to_buy * $ref->{cost} ;
 
-    print "<TD class=number>" . &format_integer($ref->{quantity_instock})   . "</TD>" ;
     print "<TD class=number>" . &format_integer($ref->{quantity_total})     . "</TD>" ;
-    print "<TD class=number>" . &format_currency($ref->{value},2)           . "</TD>" ;
     print "<TD class=number>" . &format_integer($units_to_cover)            . "</TD>" ;
     print "<TD class=number>" . &format_currency($dollars_to_cover ,2)      . "</TD>" ;
     print "<TD class=number>" . &format_integer($units_to_buy)              . "</TD>" ;
     print "<TD class=number>" . &format_integer($vendor_units_to_buy)       . "</TD>" ;
     print "<TD class=number>" . &format_currency($dollars_to_buy ,2)        . "</TD>" ;
-    print "<TD class=number>" . &format_integer($ref->{order_count})        . "</TD>" ;
-    print "<TD class=number>" . &format_integer($ref->{unit_count})         . "</TD>" ;
     print "<TD class=number>" . &format_decimal($ref->{weekly_velocity},2)  . "</TD>" ;
     print "<TD class=number>" . &format_decimal($ref->{woc},2)              . "</TD>" ;
     print "</TR>\n" ;
