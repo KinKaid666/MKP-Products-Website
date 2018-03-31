@@ -147,7 +147,7 @@ while (my $ref = $ohi_sth->fetchrow_hashref())
     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
     print "<TD class=string>$ref->{vendor_name}</TD>" ;
     print "<TD class=string>$ref->{vendor_sku}</TD>" ;
-    print "<TD class=number>$ref->{pack_size}</TD>" ;
+    print "<TD class=number>" . &format_integer($ref->{pack_size}) . "</TD>" ;
     if(not $ref->{source_name} =~ m/www/)
     {
         print "<TD class=string>$ref->{source_name}</TD>" ;
