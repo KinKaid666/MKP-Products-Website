@@ -17,10 +17,13 @@ use constant SKU_DETAILS_SELECT_STATEMENT => qq(
     select s.sku
            ,s.description
            ,v.vendor_name
-           ,v.description vendor_description
+           ,ifnull(csp.vendor_sku,'Unknown') vendor_sku
+           ,ifnull(csp.pack_size,1) pack_size
       from skus s
       join vendors v
         on s.vendor_name = v.vendor_name
+      left outer join sku_case_packs csp
+        on s.sku = csp.sku
      where s.sku = ?
 ) ;
 
@@ -183,7 +186,8 @@ print "<TABLE><TR>"          .
       "<TH>SKU</TH>"         .
       "<TH>Description</TH>" .
       "<TH>Vendor Name</TH>" .
-      "<TH>Description</TH>" .
+      "<TH>Vendor SKU</TH>"  .
+      "<TH>Pack Size</TH>"   .
       "</TR> \n" ;
 my $sku_details_sth = $dbh->prepare(${\SKU_DETAILS_SELECT_STATEMENT}) ;
 $sku_details_sth->execute($sku) or die $DBI::errstr ;
@@ -193,7 +197,8 @@ while (my $ref = $sku_details_sth->fetchrow_hashref())
     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
     print "<TD class=string>$ref->{description}</a></TD>" ;
     print "<TD class=string>$ref->{vendor_name}</TD>" ;
-    print "<TD class=string>" . &nvl($ref->{vendor_description}) . "</TD>" ;
+    print "<TD class=string>" . &nvl($ref->{vendor_sku}) . "</TD>" ;
+    print "<TD class=number>" . &nvl($ref->{pack_size}) . "</TD>" ;
     print "</TR>\n" ;
 }
 print "</TABLE>\n" ;

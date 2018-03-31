@@ -14,9 +14,10 @@ use MKPFormatter ;
 use MKPUser ;
 
 use constant SKU_OHI_SELECT_STATEMENT => qq(
-    select min(posted_dt) oldest_order
-           ,so.sku
+    select so.sku
            ,v.vendor_name
+           ,ifnull(scp.vendor_sku,'Unknown') vendor_sku
+           ,ifnull(scp.pack_size,1) pack_size
            ,ifnull(ri.source_name, "N/A") source_name
            ,ifnull(ri.quantity_instock, 0) quantity_instock
            ,ifnull(ri.quantity_total, 0) quantity_total
@@ -29,20 +30,6 @@ use constant SKU_OHI_SELECT_STATEMENT => qq(
            ,ifnull(ri.quantity_total, 0) /
                    (sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
                    ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/7)) woc
-           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
-           , sum(promotional_rebates                ) +
-                 sum(marketplace_facilitator_tax        ) +
-                 sum(other_fees                         ) +
-                 sum(so.selling_fees                    ) selling_fees
-           ,sum(so.fba_fees                        ) fba_fees
-           ,sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
-           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) +
-                 sum(promotional_rebates                ) +
-                 sum(marketplace_facilitator_tax        ) +
-                 sum(other_fees                         ) +
-                 sum(so.selling_fees                    ) +
-                 sum(so.fba_fees                        ) +
-                 sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) contrib_margin
       from financial_shipment_events so
       join sku_costs sc
         on so.sku = sc.sku
@@ -55,14 +42,18 @@ use constant SKU_OHI_SELECT_STATEMENT => qq(
         on sc.sku = s.sku
       join vendors v
         on v.vendor_name = s.vendor_name
+      left outer join sku_case_packs scp
+        on scp.sku = s.sku
      where so.posted_dt > NOW() - INTERVAL ? DAY
      group by sku
               ,v.vendor_name
+              ,scp.vendor_sku
+              ,scp.pack_size
               ,sc.cost
               ,ri.source_name
               ,ri.quantity_instock
               ,ri.quantity_total
-     order by contrib_margin
+     order by weekly_velocity desc
 ) ;
 
 my $username = &validate() ;
@@ -132,33 +123,31 @@ $ohi_sth->execute($days, $days, $days, $days, $days) or die $DBI::errstr ;
 
 print "<BR><TABLE id=\"pnl\">" .
       "<TBODY><TR>"            .
-      "<TH onclick=\"sortTable(0)\" style=\"cursor:pointer\">Ordest Order</TH>"         .
-      "<TH onclick=\"sortTable(1)\" style=\"cursor:pointer\">SKU</TH>"                  .
-      "<TH onclick=\"sortTable(2)\" style=\"cursor:pointer\">Vendor</TH>"               .
-      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">Source of Inventory</TH>"  .
-      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">In-stock Qty</TH>"         .
-      "<TH onclick=\"sortTable(5)\" style=\"cursor:pointer\">Total Qty</TH>"            .
-      "<TH onclick=\"sortTable(6)\" style=\"cursor:pointer\">On Hand \$</TH>"           .
-      "<TH onclick=\"sortTable(7)\" style=\"cursor:pointer\">Desired OH Units</TH>"     .
-      "<TH onclick=\"sortTable(8)\" style=\"cursor:pointer\">Desired OH\$</TH>"         .
-      "<TH onclick=\"sortTable(9)\" style=\"cursor:pointer\">Amount to Buy Units</TH>"  .
-      "<TH onclick=\"sortTable(10)\" style=\"cursor:pointer\">Amount to Buy \$</TH>"    .
-      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">Order Count</TH>"         .
-      "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">Unit Count</TH>"          .
-      "<TH onclick=\"sortTable(13)\" style=\"cursor:pointer\">Weekly Velocity</TH>"     .
-      "<TH onclick=\"sortTable(14)\" style=\"cursor:pointer\">Weeks of Coverage</TH>"   .
-      "<TH onclick=\"sortTable(15)\" style=\"cursor:pointer\">Sales</TH>"               .
-      "<TH onclick=\"sortTable(16)\" style=\"cursor:pointer\">Selling Fees</TH>"        .
-      "<TH onclick=\"sortTable(17)\" style=\"cursor:pointer\">FBA Fees</TH>"            .
-      "<TH onclick=\"sortTable(18)\" style=\"cursor:pointer\">Cogs</TH>"                .
-      "<TH onclick=\"sortTable(19)\" style=\"cursor:pointer\">Contribution Margin</TH>" .
+      "<TH onclick=\"sortTable(0)\" style=\"cursor:pointer\">SKU</TH>"                  .
+      "<TH onclick=\"sortTable(1)\" style=\"cursor:pointer\">Vendor</TH>"               .
+      "<TH onclick=\"sortTable(2)\" style=\"cursor:pointer\">Vendor SKU</TH>"           .
+      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">Case Pack</TH>"            .
+      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">Source of Inventory</TH>"  .
+      "<TH onclick=\"sortTable(5)\" style=\"cursor:pointer\">In-stock Qty</TH>"         .
+      "<TH onclick=\"sortTable(6)\" style=\"cursor:pointer\">Total Qty</TH>"            .
+      "<TH onclick=\"sortTable(7)\" style=\"cursor:pointer\">On Hand \$</TH>"           .
+      "<TH onclick=\"sortTable(8)\" style=\"cursor:pointer\">Desired OH Units</TH>"     .
+      "<TH onclick=\"sortTable(9)\" style=\"cursor:pointer\">Desired OH\$</TH>"         .
+      "<TH onclick=\"sortTable(10)\" style=\"cursor:pointer\">Amount to Buy Units</TH>"  .
+      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">Amount to Buy Vendor Units</TH>"  .
+      "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">Amount to Buy \$</TH>"    .
+      "<TH onclick=\"sortTable(13)\" style=\"cursor:pointer\">Order Count</TH>"         .
+      "<TH onclick=\"sortTable(14)\" style=\"cursor:pointer\">Unit Count</TH>"          .
+      "<TH onclick=\"sortTable(15)\" style=\"cursor:pointer\">Weekly Velocity</TH>"     .
+      "<TH onclick=\"sortTable(16)\" style=\"cursor:pointer\">Weeks of Coverage</TH>"   .
       "</TR>\n" ;
 while (my $ref = $ohi_sth->fetchrow_hashref())
 {
     print "<TR>" ;
-    print "<TD class=string>$ref->{oldest_order}</TD>" ;
     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
     print "<TD class=string>$ref->{vendor_name}</TD>" ;
+    print "<TD class=string>$ref->{vendor_sku}</TD>" ;
+    print "<TD class=number>$ref->{pack_size}</TD>" ;
     if(not $ref->{source_name} =~ m/www/)
     {
         print "<TD class=string>$ref->{source_name}</TD>" ;
@@ -171,6 +160,12 @@ while (my $ref = $ohi_sth->fetchrow_hashref())
     my $units_to_cover = (floor($ref->{weekly_velocity} * $woc) < 0 ? 0 : (floor($ref->{weekly_velocity} * $woc))) ;
     my $dollars_to_cover = $units_to_cover * $ref->{cost} ;
     my $units_to_buy = ($units_to_cover < $ref->{quantity_total} ? 0 : ($units_to_cover - $ref->{quantity_total})) ;
+
+    #
+    # Round up to the next pack size
+    my $vendor_units_to_buy = $units_to_buy * $ref->{pack_size} ;
+
+    # convert to dollars
     my $dollars_to_buy = $units_to_buy * $ref->{cost} ;
 
     print "<TD class=number>" . &format_integer($ref->{quantity_instock})   . "</TD>" ;
@@ -179,16 +174,12 @@ while (my $ref = $ohi_sth->fetchrow_hashref())
     print "<TD class=number>" . &format_integer($units_to_cover)            . "</TD>" ;
     print "<TD class=number>" . &format_currency($dollars_to_cover ,2)      . "</TD>" ;
     print "<TD class=number>" . &format_integer($units_to_buy)              . "</TD>" ;
+    print "<TD class=number>" . &format_integer($vendor_units_to_buy)       . "</TD>" ;
     print "<TD class=number>" . &format_currency($dollars_to_buy ,2)        . "</TD>" ;
     print "<TD class=number>" . &format_integer($ref->{order_count})        . "</TD>" ;
     print "<TD class=number>" . &format_integer($ref->{unit_count})         . "</TD>" ;
     print "<TD class=number>" . &format_decimal($ref->{weekly_velocity},2)  . "</TD>" ;
     print "<TD class=number>" . &format_decimal($ref->{woc},2)              . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{product_sales})  . ">" . &format_currency($ref->{product_sales})  . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{selling_fees})   . ">" . &format_currency($ref->{selling_fees})   . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{fba_fees})       . ">" . &format_currency($ref->{fba_fees})       . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{cogs})           . ">" . &format_currency($ref->{cogs})           . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{contrib_margin}) . ">" . &format_currency($ref->{contrib_margin}) . "</TD>" ;
     print "</TR>\n" ;
 }
 print qq(</TBODY></TABLE> <script>
