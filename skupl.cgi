@@ -137,19 +137,19 @@ print "<TABLE id=\"pnl\">"           .
       "<TH onclick=\"sortTable(8)\" style=\"cursor:pointer\">Weekly Velocity</TH>"      .
       "<TH onclick=\"sortTable(9)\" style=\"cursor:pointer\">Weeks of Coverage</TH>"    .
       "<TH onclick=\"sortTable(10)\" style=\"cursor:pointer\">Sales</TH>"               .
-      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">per Unit</TH>"            .
+      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">/ unit</TH>"              .
       "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">Selling Fees</TH>"        .
-      "<TH onclick=\"sortTable(13)\" style=\"cursor:pointer\">per Unit</TH>"            .
-      "<TH onclick=\"sortTable(14)\" style=\"cursor:pointer\">as Pct</TH>"              .
+      "<TH onclick=\"sortTable(13)\" style=\"cursor:pointer\">/ unit</TH>"              .
+      "<TH onclick=\"sortTable(14)\" style=\"cursor:pointer\">%</TH>"                   .
       "<TH onclick=\"sortTable(15)\" style=\"cursor:pointer\">FBA Fees</TH>"            .
-      "<TH onclick=\"sortTable(16)\" style=\"cursor:pointer\">per Unit</TH>"            .
-      "<TH onclick=\"sortTable(17)\" style=\"cursor:pointer\">as Pct</TH>"              .
+      "<TH onclick=\"sortTable(16)\" style=\"cursor:pointer\">/ unit</TH>"              .
+      "<TH onclick=\"sortTable(17)\" style=\"cursor:pointer\">%</TH>"                   .
       "<TH onclick=\"sortTable(18)\" style=\"cursor:pointer\">Cogs</TH>"                .
-      "<TH onclick=\"sortTable(19)\" style=\"cursor:pointer\">per Unit</TH>"            .
-      "<TH onclick=\"sortTable(20)\" style=\"cursor:pointer\">as Pct</TH>"              .
+      "<TH onclick=\"sortTable(19)\" style=\"cursor:pointer\">/ unit</TH>"              .
+      "<TH onclick=\"sortTable(20)\" style=\"cursor:pointer\">%</TH>"                   .
       "<TH onclick=\"sortTable(21)\" style=\"cursor:pointer\">Contribution Margin</TH>" .
-      "<TH onclick=\"sortTable(22)\" style=\"cursor:pointer\">per Unit</TH>"            .
-      "<TH onclick=\"sortTable(23)\" style=\"cursor:pointer\">as Pct</TH>"              .
+      "<TH onclick=\"sortTable(22)\" style=\"cursor:pointer\">/ unit</TH>"              .
+      "<TH onclick=\"sortTable(23)\" style=\"cursor:pointer\">%</TH>"                   .
       "</TR>\n" ;
 while (my $ref = $s_sth->fetchrow_hashref())
 {

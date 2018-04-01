@@ -330,19 +330,19 @@ print "<TABLE><TR>"                  .
       "<TH>Order Count</TH>"         .
       "<TH>Unit Count</TH>"          .
       "<TH>Sales</TH>"               .
-      "<TH>per Unit</TH>"            .
+      "<TH>/ unit</TH>"              .
       "<TH>Selling Fees</TH>"        .
-      "<TH>per Unit</TH>"            .
-      "<TH>as Pct</TH>"              .
+      "<TH>/ unit</TH>"              .
+      "<TH>%</TH>"                   .
       "<TH>FBA Fees</TH>"            .
-      "<TH>per Unit</TH>"            .
-      "<TH>as Pct</TH>"              .
+      "<TH>/ unit</TH>"              .
+      "<TH>%</TH>"                   .
       "<TH>Cogs</TH>"                .
-      "<TH>per Unit</TH>"            .
-      "<TH>as Pct</TH>"              .
+      "<TH>/ unit</TH>"              .
+      "<TH>%</TH>"                   .
       "<TH>Contribution Margin</TH>" .
-      "<TH>per Unit</TH>"            .
-      "<TH>as Pct</TH>"              .
+      "<TH>/ unit</TH>"              .
+      "<TH>%</TH>"                   .
       "</TR> \n" ;
 my $pnl_sth = $dbh->prepare(${\SKU_PNL_SELECT_STATEMENT}) ;
 $pnl_sth->execute($sku) or die $DBI::errstr ;
