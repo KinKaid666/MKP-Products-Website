@@ -21,7 +21,7 @@ use constant WEEKLY_PNL_SELECT_STATEMENT => qq(
            , product_sales
            , (promotional_rebates + marketplace_facilitator_tax + other_fees + selling_fees) selling_fees
            , fba_fees
-           , cogs 
+           , cogs
            , ifnull(sga_by_week.expenses,0) + ifnull(expenses_by_week.expenses,0) expenses
            , (product_sales + promotional_rebates + marketplace_facilitator_tax + other_fees + selling_fees + fba_fees + cogs + ifnull(expenses_by_week.expenses,0) + ifnull(sga_by_week.expenses,0) ) net_income
       from ( select date_format(so.posted_dt,"%X") year
@@ -148,25 +148,25 @@ $s_sth->execute() or die $DBI::errstr ;
 print "<TABLE><TR>"           .
       "<TH>Year</TH>"         .
       "<TH>" . ($option eq 'WEEKLY' ? "Week" : "Month") . "</TH>" .
-      "<TH>Order Count</TH>"  .
-      "<TH>Unit Count</TH>"   .
+      "<TH>Orders</TH>"       .
+      "<TH>Units</TH>"        .
       "<TH>Sales</TH>"        .
-      "<TH>per Unit</TH>"     .
+      "<TH>/ unit</TH>"       .
       "<TH>Selling Fees</TH>" .
-      "<TH>per Unit</TH>"     .
-      "<TH>as Pct</TH>"       .
+      "<TH>/ unit</TH>"       .
+      "<TH>%</TH>"            .
       "<TH>FBA Fees</TH>"     .
-      "<TH>per Unit</TH>"     .
-      "<TH>as Pct</TH>"       .
-      "<TH>Cogs</TH>"         .
-      "<TH>per Unit</TH>"     .
-      "<TH>as Pct</TH>"       .
+      "<TH>/ unit</TH>"       .
+      "<TH>%</TH>"            .
+      "<TH>COGS</TH>"         .
+      "<TH>/ unit</TH>"       .
+      "<TH>%</TH>"            .
       "<TH>Expenses</TH>"     .
-      "<TH>per Unit</TH>"     .
-      "<TH>as Pct</TH>"       .
+      "<TH>/ Unit</TH>"       .
+      "<TH>%</TH>"            .
       "<TH>Net Income</TH>"   .
-      "<TH>per Unit</TH>"     .
-      "<TH>as Pct</TH>"       .
+      "<TH>/ unit</TH>"       .
+      "<TH>%</TH>"            .
       "</TR> \n" ;
 while (my $ref = $s_sth->fetchrow_hashref())
 {
