@@ -126,28 +126,27 @@ my $s_sth = $dbh->prepare(${\SKU_PNL_SELECT_STATEMENT}) ;
 $s_sth->execute($days, $days, $days, $days, $days) or die $DBI::errstr ;
 print "<TABLE id=\"pnl\">"           .
       "<TBODY><TR>"                  .
-      "<TH onclick=\"sortTable(0)\" style=\"cursor:pointer\">Ordest Order</TH>"         .
-      "<TH onclick=\"sortTable(1)\" style=\"cursor:pointer\">SKU</TH>"                  .
-      "<TH onclick=\"sortTable(2)\" style=\"cursor:pointer\">Vendor</TH>"               .
-      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">Source of Inventory</TH>"  .
-      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">In-stock Quantity</TH>"    .
-      "<TH onclick=\"sortTable(5)\" style=\"cursor:pointer\">Total Quantity</TH>"       .
-      "<TH onclick=\"sortTable(6)\" style=\"cursor:pointer\">Order Count</TH>"          .
-      "<TH onclick=\"sortTable(7)\" style=\"cursor:pointer\">Unit Count</TH>"           .
-      "<TH onclick=\"sortTable(8)\" style=\"cursor:pointer\">Weekly Velocity</TH>"      .
-      "<TH onclick=\"sortTable(9)\" style=\"cursor:pointer\">Weeks of Coverage</TH>"    .
-      "<TH onclick=\"sortTable(10)\" style=\"cursor:pointer\">Sales</TH>"               .
-      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">/ unit</TH>"              .
-      "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">Selling Fees</TH>"        .
-      "<TH onclick=\"sortTable(13)\" style=\"cursor:pointer\">/ unit</TH>"              .
-      "<TH onclick=\"sortTable(14)\" style=\"cursor:pointer\">%</TH>"                   .
-      "<TH onclick=\"sortTable(15)\" style=\"cursor:pointer\">FBA Fees</TH>"            .
-      "<TH onclick=\"sortTable(16)\" style=\"cursor:pointer\">/ unit</TH>"              .
-      "<TH onclick=\"sortTable(17)\" style=\"cursor:pointer\">%</TH>"                   .
-      "<TH onclick=\"sortTable(18)\" style=\"cursor:pointer\">Cogs</TH>"                .
-      "<TH onclick=\"sortTable(19)\" style=\"cursor:pointer\">/ unit</TH>"              .
-      "<TH onclick=\"sortTable(20)\" style=\"cursor:pointer\">%</TH>"                   .
-      "<TH onclick=\"sortTable(21)\" style=\"cursor:pointer\">Contribution Margin</TH>" .
+      "<TH onclick=\"sortTable(0)\" style=\"cursor:pointer\">SKU</TH>"                  .
+      "<TH onclick=\"sortTable(1)\" style=\"cursor:pointer\">Vendor</TH>"               .
+      "<TH onclick=\"sortTable(2)\" style=\"cursor:pointer\">Source of Inventory</TH>"  .
+      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">In-stock Qty</TH>"         .
+      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">Total Qty</TH>"            .
+      "<TH onclick=\"sortTable(5)\" style=\"cursor:pointer\">Orders</TH>"               .
+      "<TH onclick=\"sortTable(6)\" style=\"cursor:pointer\">Units</TH>"                .
+      "<TH onclick=\"sortTable(7)\" style=\"cursor:pointer\">Velocity</TH>"             .
+      "<TH onclick=\"sortTable(8)\" style=\"cursor:pointer\">WOC</TH>"                  .
+      "<TH onclick=\"sortTable(9)\" style=\"cursor:pointer\">Sales</TH>"                .
+      "<TH onclick=\"sortTable(10)\" style=\"cursor:pointer\">/ unit</TH>"              .
+      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">Selling Fees</TH>"        .
+      "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">/ unit</TH>"              .
+      "<TH onclick=\"sortTable(13)\" style=\"cursor:pointer\">%</TH>"                   .
+      "<TH onclick=\"sortTable(14)\" style=\"cursor:pointer\">FBA Fees</TH>"            .
+      "<TH onclick=\"sortTable(15)\" style=\"cursor:pointer\">/ unit</TH>"              .
+      "<TH onclick=\"sortTable(16)\" style=\"cursor:pointer\">%</TH>"                   .
+      "<TH onclick=\"sortTable(17)\" style=\"cursor:pointer\">Cogs</TH>"                .
+      "<TH onclick=\"sortTable(18)\" style=\"cursor:pointer\">/ unit</TH>"              .
+      "<TH onclick=\"sortTable(19)\" style=\"cursor:pointer\">%</TH>"                   .
+      "<TH onclick=\"sortTable(20)\" style=\"cursor:pointer\">Contribution Margin</TH>" .
       "<TH onclick=\"sortTable(22)\" style=\"cursor:pointer\">/ unit</TH>"              .
       "<TH onclick=\"sortTable(23)\" style=\"cursor:pointer\">%</TH>"                   .
       "</TR>\n" ;
@@ -155,7 +154,6 @@ while (my $ref = $s_sth->fetchrow_hashref())
 {
     next if ($show_active and not $ref->{is_active}) ;
     print "<TR>" ;
-    print "<TD class=string>$ref->{oldest_order}</TD>" ;
     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
     print "<TD class=string>$ref->{vendor_name}</TD>" ;
     if(not $ref->{source_name} =~ m/www/)

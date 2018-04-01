@@ -120,19 +120,19 @@ $ohi_sth->execute($days, $days, $days, $days, $days) or die $DBI::errstr ;
 
 print "<BR><TABLE id=\"pnl\">" .
       "<TBODY><TR>"            .
-      "<TH onclick=\"sortTable(0)\" style=\"cursor:pointer\">SKU</TH>"                         .
-      "<TH onclick=\"sortTable(1)\" style=\"cursor:pointer\">Vendor</TH>"                      .
-      "<TH onclick=\"sortTable(2)\" style=\"cursor:pointer\">Vendor SKU</TH>"                  .
-      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">Case Pack</TH>"                   .
-      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">Source of Inventory</TH>"         .
-      "<TH onclick=\"sortTable(5)\" style=\"cursor:pointer\">Total Qty</TH>"                   .
-      "<TH onclick=\"sortTable(6)\" style=\"cursor:pointer\">Desired OH Units</TH>"            .
-      "<TH onclick=\"sortTable(7)\" style=\"cursor:pointer\">Desired OH\$</TH>"                .
-      "<TH onclick=\"sortTable(8)\" style=\"cursor:pointer\">Amount to Buy Units</TH>"        .
-      "<TH onclick=\"sortTable(9)\" style=\"cursor:pointer\">Amount to Buy Vendor Units</TH>" .
-      "<TH onclick=\"sortTable(10)\" style=\"cursor:pointer\">Amount to Buy \$</TH>"           .
-      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">Weekly Velocity</TH>"            .
-      "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">Weeks of Coverage</TH>"          .
+      "<TH onclick=\"sortTable(0)\" style=\"cursor:pointer\">SKU</TH>"               .
+      "<TH onclick=\"sortTable(1)\" style=\"cursor:pointer\">Vendor</TH>"            .
+      "<TH onclick=\"sortTable(2)\" style=\"cursor:pointer\">Vendor SKU</TH>"        .
+      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">Pack Size</TH>"         .
+      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">Source</TH>"            .
+      "<TH onclick=\"sortTable(5)\" style=\"cursor:pointer\">Total Qty</TH>"         .
+      "<TH onclick=\"sortTable(6)\" style=\"cursor:pointer\">Desired OH</TH>"        .
+      "<TH onclick=\"sortTable(7)\" style=\"cursor:pointer\">Desired OH\$</TH>"      .
+      "<TH onclick=\"sortTable(8)\" style=\"cursor:pointer\">To Buy</TH>"            .
+      "<TH onclick=\"sortTable(9)\" style=\"cursor:pointer\">To Buy Vendor</TH>"     .
+      "<TH onclick=\"sortTable(10)\" style=\"cursor:pointer\">Amount to Buy \$</TH>" .
+      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">Velocity</TH>"         .
+      "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">WOC</TH>"              .
       "</TR>\n" ;
 while (my $ref = $ohi_sth->fetchrow_hashref())
 {
