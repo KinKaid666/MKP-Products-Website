@@ -17,14 +17,12 @@ use constant MONTHLY_EXPENSES_SELECT_STATEMENT => qq(
 select year
        ,month
        ,total
-       ,category
        ,type
        ,description
   from (
     select year(expense_datetime) year
            ,month(expense_datetime) month
            ,sum(total) total
-           ,case when type = 'Consulting' or type = 'Salary' or type = 'Rent' then 'SG&A' else 'Expense' end category
            ,type
            ,description
       from expenses
@@ -38,7 +36,6 @@ union all
     select year(expense_dt) year
            ,month(expense_dt) month
            ,sum(total) total
-           ,case when type = 'Consulting' or type = 'Salary' or type = 'Rent' then 'SG&A' else 'Expense' end category
            ,type
            ,description
       from financial_expense_events
@@ -57,13 +54,11 @@ union all
 use constant WEEKLY_EXPENSES_SELECT_STATEMENT => qq(
 select period
        ,total
-       ,category
        ,type
        ,description
   from (
     select date_format(expense_datetime,"%X-%V") period
            ,sum(total) total
-           ,case when type = 'Consulting' or type = 'Salary' or type = 'Rent' then 'SG&A' else 'Expense' end category
            ,type
            ,description
       from expenses
@@ -74,7 +69,6 @@ select period
     union all
     select date_format(expense_dt,"%X-%V") period
            ,sum(total) total
-           ,case when type = 'Consulting' or type = 'Salary' or type = 'Rent' then 'SG&A' else 'Expense' end category
            ,type
            ,description
       from financial_expense_events
@@ -120,7 +114,6 @@ else
 print "<TABLE><TR>"                  .
       "<TH>Year</TH>"                .
       "<TH>" . (defined $week ? "Week" : "Month") . "</TH>" .
-      "<TH>Category</TH>"            .
       "<TH>Expense Type</TH>"        .
       "<TH>Expense Description</TH>" .
       "<TH>Expenses</TH>"            .
@@ -141,14 +134,13 @@ while (my $ref = $expenses_sth->fetchrow_hashref())
     print "<TR>" ;
     print "<TD class=number>$y</TD>" ;
     print "<TD class=number>$m_or_w</TD>" ;
-    print "<TD class=string>$ref->{category}</TD>" ;
     print "<TD class=string>$ref->{type}</TD>" ;
     print "<TD class=string>$ref->{description}</TD>" ;
     print "<TD class=number" . &add_neg_tag($ref->{total})   . ">" . &format_currency($ref->{total},2)  . "</TD>" ;
     print "</TR>" ;
     $expenses += $ref->{total} ;
 }
-print "<TR><TD colspan=\"5\"><strong>Total</strong></TD>" ;
+print "<TR><TD colspan=\"4\"><strong>Total</strong></TD>" ;
 print "<TD class=number" . &add_neg_tag($expenses)   . "><strong>" . &format_currency($expenses,2)  . "</strong></TD>" ;
 print "</TR>\n" ;
 print "</TABLE>\n" ;

@@ -21,8 +21,8 @@ use constant WEEKLY_PNL_SELECT_STATEMENT => qq(
            , product_sales
            , (promotional_rebates + marketplace_facilitator_tax + other_fees + selling_fees) selling_fees
            , fba_fees
-           , cogs , ifnull(expenses_by_week.expenses,0) expenses
-           , ifnull(sga_by_week.expenses,0) sga
+           , cogs 
+           , ifnull(sga_by_week.expenses,0) + ifnull(expenses_by_week.expenses,0) expenses
            , (product_sales + promotional_rebates + marketplace_facilitator_tax + other_fees + selling_fees + fba_fees + cogs + ifnull(expenses_by_week.expenses,0) + ifnull(sga_by_week.expenses,0) ) net_income
       from ( select date_format(so.posted_dt,"%X") year
                     ,date_format(so.posted_dt, "%V") week
@@ -40,7 +40,7 @@ use constant WEEKLY_PNL_SELECT_STATEMENT => qq(
                  on so.sku = sc.sku
                 and sc.start_date < so.posted_dt
                 and (sc.end_date is null or
-                     sc.end_date > so.posted_dt)
+                     sc.end_date >= so.posted_dt)
              group by date_format(so.posted_dt,"%X")
                       ,date_format(so.posted_dt,"%V")
       ) as sku_activity_by_week
@@ -48,8 +48,6 @@ use constant WEEKLY_PNL_SELECT_STATEMENT => qq(
                     ,date_format(e.expense_dt,"%V") week
                     ,sum(e.total) expenses
                from financial_expense_events e
-              where type <> "Salary"
-                and type <> "Rent"
              group by date_format(e.expense_dt,"%X")
                       ,date_format(e.expense_dt,"%V")
            ) expenses_by_week
@@ -59,8 +57,6 @@ use constant WEEKLY_PNL_SELECT_STATEMENT => qq(
                     ,date_format(e.expense_datetime,"%V") week
                     ,sum(e.total) expenses
                from expenses e
-              where type = "Salary"
-                 or type = "Rent"
              group by date_format(e.expense_datetime,"%X")
                       ,date_format(e.expense_datetime,"%V")
            ) sga_by_week
@@ -77,8 +73,8 @@ use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
            , product_sales
            , (promotional_rebates + marketplace_facilitator_tax + other_fees + selling_fees) selling_fees
            , fba_fees
-           , cogs , ifnull(expenses_by_month.expenses,0) expenses
-           , ifnull(sga_by_month.expenses,0) sga
+           , cogs 
+           , ifnull(sga_by_month.expenses,0) + ifnull(expenses_by_month.expenses,0) expenses
            , (product_sales + promotional_rebates + marketplace_facilitator_tax + other_fees + selling_fees + fba_fees + cogs + ifnull(expenses_by_month.expenses,0) + ifnull(sga_by_month.expenses,0) ) net_income
       from ( select date_format(so.posted_dt,"%Y") year
                     ,date_format(so.posted_dt, "%m") month
@@ -96,7 +92,7 @@ use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
                  on so.sku = sc.sku
                 and sc.start_date < so.posted_dt
                 and (sc.end_date is null or
-                     sc.end_date > so.posted_dt)
+                     sc.end_date >= so.posted_dt)
              group by date_format(so.posted_dt,"%Y")
                       ,date_format(so.posted_dt,"%m")
       ) as sku_activity_by_month
@@ -104,8 +100,6 @@ use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
                     ,date_format(e.expense_dt,"%m") month
                     ,sum(e.total) expenses
                from financial_expense_events e
-              where type <> "Salary"
-                and type <> "Rent"
              group by date_format(e.expense_dt,"%Y")
                       ,date_format(e.expense_dt,"%m")
            ) expenses_by_month
@@ -115,8 +109,6 @@ use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
                     ,date_format(e.expense_datetime,"%m") month
                     ,sum(e.total) expenses
                from expenses e
-              where type = "Salary"
-                 or type = "Rent"
              group by date_format(e.expense_datetime,"%Y")
                       ,date_format(e.expense_datetime,"%m")
            ) sga_by_month
@@ -172,9 +164,6 @@ print "<TABLE><TR>"           .
       "<TH>Expenses</TH>"     .
       "<TH>per Unit</TH>"     .
       "<TH>as Pct</TH>"       .
-      "<TH>SG&A</TH>"         .
-      "<TH>per Unit</TH>"     .
-      "<TH>as Pct</TH>"       .
       "<TH>Net Income</TH>"   .
       "<TH>per Unit</TH>"     .
       "<TH>as Pct</TH>"       .
@@ -200,9 +189,6 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "<TD class=number" . &add_neg_tag($ref->{expenses})      . ">" . "<a href=expenses.cgi?YEAR=$ref->{year}\&" . ($option eq "WEEKLY" ? "WEEK=$ref->{week}" : "MONTH=$ref->{month}") . ">" . &format_currency($ref->{expenses}) . "</a></TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{expenses})      . ">" . &format_currency($ref->{expenses}/$ref->{unit_count},2)       . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{expenses})      . ">" . &format_percent($ref->{expenses}/$ref->{product_sales},1)     . "</TD>\n" ;
-    print "<TD class=number" . &add_neg_tag($ref->{sga})           . ">" . "<a href=expenses.cgi?YEAR=$ref->{year}\&" . ($option eq "WEEKLY" ? "WEEK=$ref->{week}" : "MONTH=$ref->{month}") . ">" . &format_currency($ref->{sga}) . "</a></TD>\n" ;
-    print "<TD class=number" . &add_neg_tag($ref->{sga})           . ">" . &format_currency($ref->{sga}/$ref->{unit_count},2)            . "</TD>\n" ;
-    print "<TD class=number" . &add_neg_tag($ref->{sga})           . ">" . &format_percent($ref->{sga}/$ref->{product_sales},1)          . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{net_income})    . ">" . &format_currency($ref->{net_income})                          . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{net_income})    . ">" . &format_currency($ref->{net_income}/$ref->{unit_count},2)     . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{net_income})    . ">" . &format_percent($ref->{net_income}/$ref->{product_sales},1)   . "</TD>\n" ;
