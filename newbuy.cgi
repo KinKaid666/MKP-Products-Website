@@ -15,6 +15,7 @@ use MKPUser ;
 
 use constant SKU_OHI_SELECT_STATEMENT => qq(
     select so.sku
+           ,s.title
            ,v.vendor_name
            ,ifnull(scp.vendor_sku,'Unknown') vendor_sku
            ,ifnull(scp.pack_size,1) pack_size
@@ -44,6 +45,7 @@ use constant SKU_OHI_SELECT_STATEMENT => qq(
         on scp.sku = s.sku
      where so.posted_dt > NOW() - INTERVAL ? DAY
      group by sku
+              ,s.title
               ,v.vendor_name
               ,scp.vendor_sku
               ,scp.pack_size
@@ -121,23 +123,25 @@ $ohi_sth->execute($days, $days, $days, $days, $days) or die $DBI::errstr ;
 print "<BR><TABLE id=\"pnl\">" .
       "<TBODY><TR>"            .
       "<TH onclick=\"sortTable(0)\" style=\"cursor:pointer\">SKU</TH>"           .
-      "<TH onclick=\"sortTable(1)\" style=\"cursor:pointer\">Vendor</TH>"        .
-      "<TH onclick=\"sortTable(2)\" style=\"cursor:pointer\">Vendor SKU</TH>"    .
-      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">Pack Size</TH>"     .
-      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">Source</TH>"        .
-      "<TH onclick=\"sortTable(5)\" style=\"cursor:pointer\">Total Qty</TH>"     .
-      "<TH onclick=\"sortTable(6)\" style=\"cursor:pointer\">Desired OH</TH>"    .
-      "<TH onclick=\"sortTable(7)\" style=\"cursor:pointer\">Desired OH\$</TH>"  .
-      "<TH onclick=\"sortTable(8)\" style=\"cursor:pointer\">To Buy</TH>"        .
-      "<TH onclick=\"sortTable(9)\" style=\"cursor:pointer\">To Buy Vendor</TH>" .
-      "<TH onclick=\"sortTable(10)\" style=\"cursor:pointer\">To Buy \$</TH>"    .
-      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">Velocity</TH>"     .
-      "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">WOC</TH>"          .
+      "<TH onclick=\"sortTable(1)\" style=\"cursor:pointer\">Title</TH>"         .
+      "<TH onclick=\"sortTable(2)\" style=\"cursor:pointer\">Vendor</TH>"        .
+      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">Vendor SKU</TH>"    .
+      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">Pack Size</TH>"     .
+      "<TH onclick=\"sortTable(5)\" style=\"cursor:pointer\">Source</TH>"        .
+      "<TH onclick=\"sortTable(6)\" style=\"cursor:pointer\">Total Qty</TH>"     .
+      "<TH onclick=\"sortTable(7)\" style=\"cursor:pointer\">Desired OH</TH>"    .
+      "<TH onclick=\"sortTable(8)\" style=\"cursor:pointer\">Desired OH\$</TH>"  .
+      "<TH onclick=\"sortTable(9)\" style=\"cursor:pointer\">To Buy</TH>"        .
+      "<TH onclick=\"sortTable(10)\" style=\"cursor:pointer\">To Buy Vendor</TH>".
+      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">To Buy \$</TH>"    .
+      "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">Velocity</TH>"     .
+      "<TH onclick=\"sortTable(13)\" style=\"cursor:pointer\">WOC</TH>"          .
       "</TR>\n" ;
 while (my $ref = $ohi_sth->fetchrow_hashref())
 {
     print "<TR>" ;
     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
+    print "<TD class=string>$ref->{title}</TD>" ;
     print "<TD class=string>$ref->{vendor_name}</TD>" ;
     print "<TD class=string>$ref->{vendor_sku}</TD>" ;
     print "<TD class=number>" . &format_integer($ref->{pack_size}) . "</TD>" ;
