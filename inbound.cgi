@@ -60,7 +60,7 @@ print "<TABLE><TR>"            .
       "</TR> \n" ;
 while (my $ref = $s_sth->fetchrow_hashref())
 {
-    next if not $showclosed and $ref->{condition_name} eq "CLOSED" ;
+    next if not $showclosed and ($ref->{condition_name} eq "CLOSED" or $ref->{condition_name} eq "DELETED") ;
     print "<TR>\n" ;
     print "<TD class=number>$ref->{id}               </TD>\n" ;
     print "<TD class=string>$ref->{condition_name}   </TD>\n" ;
