@@ -66,12 +66,12 @@ print "<TABLE><TR>"                .
       "<TH>Processing Status</TH>" .
       "<TH>Start Date</TH>"        .
       "<TH>End Date</TH>"          .
-      "<TH>Total</TH>"             .
-      "<TH>Shipment Value</TH>"    .
-      "<TH>Shipment Count</TH>"    .
-      "<TH>Expense Value</TH>"     .
-      "<TH>Expense Count</TH>"     .
-      "<TH>Calc Total</TH>"        .
+      "<TH>Total \$\$</TH>"        .
+      "<TH>Shipment \$\$</TH>"     .
+      "<TH>Shipments</TH>"         .
+      "<TH>Expense \$\$</TH>"      .
+      "<TH>Expenses</TH>"          .
+      "<TH>Details \$\$</TH>"      .
       "<TH>Gap</TH>"               .
       "</TR> \n" ;
 while (my $ref = $s_sth->fetchrow_hashref())
@@ -88,7 +88,7 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "<TD class=number" . &add_neg_tag($ref->{e_value})   . ">" . &format_currency($ref->{e_value},2)   . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{e_ct})      . ">" . &format_decimal($ref->{e_ct})         . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{det_total}) . ">" . &format_currency($ref->{det_total},2) . "</TD>\n" ;
-    print "<TD class=number" . &add_neg_tag($ref->{gap})       . ">" . &format_currency($ref->{gap},2)       . "</TD>\n" ;
+    print "<TD class=number" . ($ref->{gap} != 0 ? "-neg":"")  . ">" . &format_currency($ref->{gap},2)       . "</TD>\n" ;
     print "</TR>\n" ;
 }
 print "</TABLE>\n" ;
