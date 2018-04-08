@@ -68,7 +68,57 @@ use constant SKU_PNL_SELECT_STATEMENT => qq(
               ,ri.source_name
               ,ri.quantity_instock
               ,ri.quantity_total
-     order by contrib_margin
+union
+select min(posted_dt) oldest_order
+           ,ri.sku
+           ,v.vendor_name
+           ,ri.source_name
+           ,ri.quantity_instock
+           ,ri.quantity_total
+           ,ifnull(acts.active,0) is_active
+           ,count(distinct so.source_order_id      ) order_count
+           ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) unit_count
+           ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
+                   ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/ 7) weekly_velocity
+           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
+           ,ifnull(ri.quantity_total, 0) /
+                   (sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
+                   ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/7)) woc
+           ,sum(promotional_rebates                ) +
+                sum(marketplace_facilitator_tax        ) +
+                sum(other_fees                         ) +
+                sum(so.selling_fees                    ) selling_fees
+           ,sum(so.fba_fees                        ) fba_fees
+           ,sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
+           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) +
+                 sum(promotional_rebates                ) +
+                 sum(marketplace_facilitator_tax        ) +
+                 sum(other_fees                         ) +
+                 sum(so.selling_fees                    ) +
+                 sum(so.fba_fees                        ) +
+                 sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) contrib_margin
+      from realtime_inventory ri
+      join skus s
+        on ri.sku = s.sku
+      join vendors v
+        on v.vendor_name = s.vendor_name
+      left outer join active_sources acts
+        on acts.sku = ri.sku
+      left outer join financial_shipment_events so
+        on ri.sku = so.sku
+      left outer join sku_costs sc
+        on so.sku = sc.sku
+       and sc.start_date < so.posted_dt
+       and (sc.end_date is null or
+            sc.end_date > so.posted_dt)
+    where so.posted_dt is null
+      and ri.quantity_total > 0
+     group by sku
+              ,v.vendor_name
+              ,ri.source_name
+              ,ri.quantity_instock
+              ,ri.quantity_total
+              ,is_active
 ) ;
 
 my $dbh ;
@@ -123,7 +173,7 @@ $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
                     {'RaiseError' => 1});
 
 my $s_sth = $dbh->prepare(${\SKU_PNL_SELECT_STATEMENT}) ;
-$s_sth->execute($days, $days, $days, $days, $days) or die $DBI::errstr ;
+$s_sth->execute($days, $days, $days, $days, $days, $days, $days, $days, $days) or die $DBI::errstr ;
 print "<TABLE id=\"pnl\">"           .
       "<TBODY><TR>"                  .
       "<TH onclick=\"sortTable(0)\" style=\"cursor:pointer\">SKU</TH>"                  .
