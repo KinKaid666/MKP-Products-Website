@@ -22,10 +22,24 @@ use constant INBOUND_SHIPMENT_ITEMS_SQL => qq(
            , isi.sku
            , quantity_shipped shipped
            , quantity_received received
+           , sum(sc.cost) cost
        from inbound_shipments ib
        join inbound_shipment_items isi
          on isi.inbound_shipment_id = ib.id
+       join sku_costs sc
+         on isi.sku = sc.sku
+        and sc.start_date < NOW()
+        and (sc.end_date is null or
+             sc.end_date > NOW())
       where ib.ext_shipment_id = ?
+    group by ib.id
+           , ib.condition_name
+           , ib.ext_shipment_id
+           , ib.ext_shipment_name
+           , ib.destination
+           , isi.sku
+           , quantity_shipped
+           , quantity_received
       order by quantity_shipped desc
 ) ;
 
@@ -56,6 +70,7 @@ print "<TABLE><TR>"            .
       "<TH>SKU</TH>"           .
       "<TH>Shipped</TH>"       .
       "<TH>Received</TH>"      .
+      "<TH>Total Value</TH>"   .
       "</TR> \n" ;
 while (my $ref = $s_sth->fetchrow_hashref())
 {
@@ -68,6 +83,7 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>\n" ;
     print "<TD class=number>$ref->{shipped}          </TD>\n" ;
     print "<TD class=number>$ref->{received}         </TD>\n" ;
+    print "<TD class=number>" . &format_currency($ref->{cost},2) . "</TD>\n" ;
     print "</TR>\n" ;
 }
 print "</TABLE>\n" ;

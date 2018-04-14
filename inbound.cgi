@@ -21,9 +21,15 @@ use constant INBOUND_SHIPMENTS_SQL => qq(
            , ib.destination
            , sum(quantity_shipped) shipped
            , sum(quantity_received) received
+           , sum(sc.cost) cost
        from inbound_shipments ib
        join inbound_shipment_items isi
          on isi.inbound_shipment_id = ib.id
+       join sku_costs sc
+         on isi.sku = sc.sku
+       and sc.start_date < NOW()
+       and (sc.end_date is null or
+            sc.end_date > NOW())
       group by ib.id
                , ib.condition_name
                , ib.ext_shipment_id
@@ -57,6 +63,7 @@ print "<TABLE><TR>"            .
       "<TH>Destination</TH>"   .
       "<TH>Shipped</TH>"       .
       "<TH>Received</TH>"      .
+      "<TH>Total Value</TH>"   .
       "</TR> \n" ;
 while (my $ref = $s_sth->fetchrow_hashref())
 {
@@ -69,6 +76,7 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "<TD class=string>$ref->{destination}      </TD>\n" ;
     print "<TD class=number>$ref->{shipped}          </TD>\n" ;
     print "<TD class=number>$ref->{received}         </TD>\n" ;
+    print "<TD class=number>" . &format_currency($ref->{cost},2) . "</TD>\n" ;
     print "</TR>\n" ;
 }
 print "</TABLE>\n" ;
