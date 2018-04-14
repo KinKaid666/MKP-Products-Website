@@ -64,6 +64,7 @@ use constant SKU_INBOUND_INVENTORY_STATEMENT => qq(
          on isi.inbound_shipment_id = ib.id
       where isi.sku = ?
         and ib.condition_name != 'CLOSED'
+        and ib.condition_name != 'DELETED'
         and isi.quantity_shipped > isi.quantity_received
 ) ;
 
