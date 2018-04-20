@@ -202,12 +202,26 @@ my $inv_row = $inv_sth->fetchrow_hashref() ;
 print "<TR>\n" ;
 print "<TD class=string>In-stock</TD>\n" ;
 print "<TD class=number>" . &format_currency($inv_row->{instock_cost},0) . "</TD>\n" ;
-print "<TD class=number>" . &format_decimal(-1 * ($inv_row->{instock_cost}/($mtd_row->{cogs}/$mdays)),2) . "</TD>\n" ;
+if($mtd_row->{cogs} > 0)
+{
+    print "<TD class=number>" . &format_decimal(-1 * ($inv_row->{instock_cost}/($mtd_row->{cogs}/$mdays)),2) . "</TD>\n" ;
+}
+else
+{
+    print "<TD class=number>" . &format_decimal(0) . "</TD>\n" ;
+}
 print "</TR>\n" ;
 print "<TR>\n" ;
 print "<TD class=string>Total</TD>\n" ;
 print "<TD class=number>" . &format_currency($inv_row->{total_cost},0) . "</TD>\n" ;
-print "<TD class=number>" . &format_decimal(-1 * ($inv_row->{total_cost}/($mtd_row->{cogs}/$mdays)),2) . "</TD>\n" ;
+if($mtd_row->{cogs} > 0)
+{
+    print "<TD class=number>" . &format_decimal(-1 * ($inv_row->{total_cost}/($mtd_row->{cogs}/$mdays)),2) . "</TD>\n" ;
+}
+else
+{
+    print "<TD class=number>" . &format_decimal(0) . "</TD>\n" ;
+}
 print "</TR>\n" ;
 print "</TABLE>\n" ;
 $inv_sth->finish() ;
