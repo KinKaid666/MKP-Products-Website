@@ -21,7 +21,7 @@ use constant INBOUND_SHIPMENTS_SQL => qq(
            , ib.destination
            , sum(quantity_shipped) shipped
            , sum(quantity_received) received
-           , sum(sc.cost) cost
+           , sum(sc.cost *quantity_shipped) cost
        from inbound_shipments ib
        join inbound_shipment_items isi
          on isi.inbound_shipment_id = ib.id
