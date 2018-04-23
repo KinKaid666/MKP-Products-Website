@@ -115,7 +115,7 @@ print $cgi->end_form() ;
 $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
                     "mkp_reporter",
                     "mkp_reporter_2018",
-                    {'RaiseError' => 1});
+                    {PrintError => 0});
 
 my $ohi_sth = $dbh->prepare(${\SKU_OHI_SELECT_STATEMENT}) ;
 $ohi_sth->execute($days, $days, $days, $days, $days) or die $DBI::errstr ;

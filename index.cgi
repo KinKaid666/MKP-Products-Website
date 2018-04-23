@@ -127,7 +127,7 @@ print $cgi->start_html( -title => "MKP Products Homepage",
 my $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
                        "mkp_reporter",
                        "mkp_reporter_2018",
-                       {'RaiseError' => 1});
+                       {PrintError => 0});
 
 {
     my $latest_sth = $dbh->prepare(${\LATEST_INVENTORY}) ;

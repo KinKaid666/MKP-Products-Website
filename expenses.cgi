@@ -96,7 +96,7 @@ my $dbh ;
 $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
                     "mkp_reporter",
                     "mkp_reporter_2018",
-                    {'RaiseError' => 1});
+                    {PrintError => 0});
 
 my $expenses_sth ;
 if( defined $week )

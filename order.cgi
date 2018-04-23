@@ -85,7 +85,7 @@ my $dbh ;
 $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
                     "mkp_reporter",
                     "mkp_reporter_2018",
-                    {'RaiseError' => 1});
+                    {PrintError => 0});
 
 my $pnl_sth = $dbh->prepare(${\ORDER_PNL_SELECT_STATEMENT}) ;
 $pnl_sth->execute($sku) or die $DBI::errstr ;

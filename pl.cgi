@@ -131,7 +131,7 @@ my $dbh ;
 $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
                     "mkp_reporter",
                     "mkp_reporter_2018",
-                    {'RaiseError' => 1});
+                    {PrintError => 0});
 
 my $s_sth ;
 
