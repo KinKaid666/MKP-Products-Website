@@ -20,105 +20,125 @@ use MKPFormatter ;
 use MKPUser ;
 
 use constant SKU_PNL_SELECT_STATEMENT => qq(
-    select min(posted_dt) oldest_order
-           ,so.sku
-           ,v.vendor_name
-           ,ri.source_name
-           ,ri.quantity_instock
-           ,ri.quantity_total
-           ,ifnull(acts.active,0) is_active
-           ,count(distinct so.source_order_id      ) order_count
-           ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) unit_count
-           ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
-                   ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/ 7) weekly_velocity
-           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
-           ,ifnull(ri.quantity_total, 0) /
-                   (sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
-                   ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/7)) woc
-           ,sum(promotional_rebates                ) +
-                sum(marketplace_facilitator_tax        ) +
-                sum(other_fees                         ) +
-                sum(so.selling_fees                    ) selling_fees
-           ,sum(so.fba_fees                        ) fba_fees
-           ,sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
-           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) +
-                 sum(promotional_rebates                ) +
-                 sum(marketplace_facilitator_tax        ) +
-                 sum(other_fees                         ) +
-                 sum(so.selling_fees                    ) +
-                 sum(so.fba_fees                        ) +
-                 sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) contrib_margin
-      from financial_shipment_events so
-      join sku_costs sc
-        on so.sku = sc.sku
-       and sc.start_date < so.posted_dt
-       and (sc.end_date is null or
-            sc.end_date > so.posted_dt)
-      left outer join active_sources acts
-        on acts.sku = so.sku
-      left outer join realtime_inventory ri
-        on ri.sku = so.sku
-      join skus s
-        on sc.sku = s.sku
-      join vendors v
-        on v.vendor_name = s.vendor_name
-     where so.posted_dt > NOW() - INTERVAL ? DAY
-     group by sku
-              ,v.vendor_name
-              ,ri.source_name
-              ,ri.quantity_instock
-              ,ri.quantity_total
-union
-select min(posted_dt) oldest_order
-           ,ri.sku
-           ,v.vendor_name
-           ,ri.source_name
-           ,ri.quantity_instock
-           ,ri.quantity_total
-           ,ifnull(acts.active,0) is_active
-           ,count(distinct so.source_order_id      ) order_count
-           ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) unit_count
-           ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
-                   ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/ 7) weekly_velocity
-           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
-           ,ifnull(ri.quantity_total, 0) /
-                   (sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
-                   ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/7)) woc
-           ,sum(promotional_rebates                ) +
-                sum(marketplace_facilitator_tax        ) +
-                sum(other_fees                         ) +
-                sum(so.selling_fees                    ) selling_fees
-           ,sum(so.fba_fees                        ) fba_fees
-           ,sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
-           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) +
-                 sum(promotional_rebates                ) +
-                 sum(marketplace_facilitator_tax        ) +
-                 sum(other_fees                         ) +
-                 sum(so.selling_fees                    ) +
-                 sum(so.fba_fees                        ) +
-                 sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) contrib_margin
-      from realtime_inventory ri
-      join skus s
-        on ri.sku = s.sku
-      join vendors v
-        on v.vendor_name = s.vendor_name
-      left outer join active_sources acts
-        on acts.sku = ri.sku
-      left outer join financial_shipment_events so
-        on ri.sku = so.sku
-      left outer join sku_costs sc
-        on so.sku = sc.sku
-       and sc.start_date < so.posted_dt
-       and (sc.end_date is null or
-            sc.end_date > so.posted_dt)
-    where so.posted_dt is null
-      and ri.quantity_total > 0
-     group by sku
-              ,v.vendor_name
-              ,ri.source_name
-              ,ri.quantity_instock
-              ,ri.quantity_total
-              ,is_active
+    select oldest_order
+           ,sku
+           ,vendor_name
+           ,source_name
+           ,quantity_instock
+           ,quantity_total
+           ,is_active
+           ,order_count
+           ,unit_count
+           ,weekly_velocity
+           ,product_sales
+           ,woc
+           ,selling_fees
+           ,fba_fees
+           ,cogs
+           ,contrib_margin
+      from
+      (
+                select min(posted_dt) oldest_order
+                       ,so.sku
+                       ,v.vendor_name
+                       ,ri.source_name
+                       ,ri.quantity_instock
+                       ,ri.quantity_total
+                       ,ifnull(acts.active,0) is_active
+                       ,count(distinct so.source_order_id      ) order_count
+                       ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) unit_count
+                       ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
+                               ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/ 7) weekly_velocity
+                       ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
+                       ,ifnull(ri.quantity_total, 0) /
+                               (sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
+                               ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/7)) woc
+                       ,sum(promotional_rebates                ) +
+                            sum(marketplace_facilitator_tax        ) +
+                            sum(other_fees                         ) +
+                            sum(so.selling_fees                    ) selling_fees
+                       ,sum(so.fba_fees                        ) fba_fees
+                       ,sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
+                       ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) +
+                             sum(promotional_rebates                ) +
+                             sum(marketplace_facilitator_tax        ) +
+                             sum(other_fees                         ) +
+                             sum(so.selling_fees                    ) +
+                             sum(so.fba_fees                        ) +
+                             sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) contrib_margin
+                  from financial_shipment_events so
+                  join sku_costs sc
+                    on so.sku = sc.sku
+                   and sc.start_date < so.posted_dt
+                   and (sc.end_date is null or
+                        sc.end_date > so.posted_dt)
+                  left outer join active_sources acts
+                    on acts.sku = so.sku
+                  left outer join realtime_inventory ri
+                    on ri.sku = so.sku
+                  join skus s
+                    on sc.sku = s.sku
+                  join vendors v
+                    on v.vendor_name = s.vendor_name
+                 where so.posted_dt > NOW() - INTERVAL ? DAY
+                 group by sku
+                          ,v.vendor_name
+                          ,ri.source_name
+                          ,ri.quantity_instock
+                          ,ri.quantity_total
+            union
+            select min(posted_dt) oldest_order
+                       ,ri.sku
+                       ,v.vendor_name
+                       ,ri.source_name
+                       ,ri.quantity_instock
+                       ,ri.quantity_total
+                       ,ifnull(acts.active,0) is_active
+                       ,count(distinct so.source_order_id      ) order_count
+                       ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) unit_count
+                       ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
+                               ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/ 7) weekly_velocity
+                       ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
+                       ,ifnull(ri.quantity_total, 0) /
+                               (sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
+                               ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/7)) woc
+                       ,sum(promotional_rebates                ) +
+                            sum(marketplace_facilitator_tax        ) +
+                            sum(other_fees                         ) +
+                            sum(so.selling_fees                    ) selling_fees
+                       ,sum(so.fba_fees                        ) fba_fees
+                       ,sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
+                       ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) +
+                             sum(promotional_rebates                ) +
+                             sum(marketplace_facilitator_tax        ) +
+                             sum(other_fees                         ) +
+                             sum(so.selling_fees                    ) +
+                             sum(so.fba_fees                        ) +
+                             sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) contrib_margin
+                  from realtime_inventory ri
+                  join skus s
+                    on ri.sku = s.sku
+                  join vendors v
+                    on v.vendor_name = s.vendor_name
+                  left outer join active_sources acts
+                    on acts.sku = ri.sku
+                  left outer join financial_shipment_events so
+                    on ri.sku = so.sku
+                  left outer join sku_costs sc
+                    on so.sku = sc.sku
+                   and sc.start_date < so.posted_dt
+                   and (sc.end_date is null or
+                        sc.end_date > so.posted_dt)
+                where so.posted_dt is null
+                  and ri.quantity_total > 0
+                 group by sku
+                          ,v.vendor_name
+                          ,ri.source_name
+                          ,ri.quantity_instock
+                          ,ri.quantity_total
+                          ,is_active
+    ) a
+    order by weekly_velocity desc
 ) ;
 
 my $dbh ;
