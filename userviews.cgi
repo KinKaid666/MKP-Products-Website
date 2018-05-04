@@ -49,11 +49,22 @@ use constant LAST_VIEW => qq(
 ) ;
 
 use constant TRENDING_SKUS => qq(
-    select substring(page, instr(page,'SKU=')+4) sku, count(1) views from user_views where lower(page) like '%sku=%' group by substring(page, instr(page,'SKU=')+4) having count(1) > 5 order by count(1) desc
+    select substring(page, instr(page,'SKU=')+4) sku
+           , count(1) views
+      from user_views
+     where lower(page) like '%sku=%'
+     group by substring(page, instr(page,'SKU=')+4)
+    having count(1) > 5
+    order by count(1) desc
 ) ;
 
 use constant TRENDING_PAGES => qq(
-    select substring_index(page,'?',1) page, count(1) views from user_views where creation_time > NOW() - INTERVAL 7 DAY group by substring_index(page,'?',1) order by views desc ;
+    select substring_index(page,'?',1) page
+           , count(1) views
+      from user_views
+     where creation_time > NOW() - INTERVAL 7 DAY
+     group by substring_index(page,'?',1)
+     order by views desc
 ) ;
 
 my $username = &validate() ;
