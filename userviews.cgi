@@ -9,7 +9,7 @@ use POSIX ;
 use Locale::Currency::Format ;
 
 # AMZL Specific Libraries
-use lib "/home/ericferg/mkp/bin/lib" ;
+use lib "/mkp/src/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
 

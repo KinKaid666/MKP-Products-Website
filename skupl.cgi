@@ -15,7 +15,7 @@ use constant WOC_ID_GREEN => 8 ;
 use constant WOC_ID_AMBER => 4 ;
 
 # AMZL Specific Libraries
-use lib "/home/ericferg/mkp/bin/lib" ;
+use lib "/mkp/src/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
 

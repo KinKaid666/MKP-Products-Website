@@ -5,7 +5,7 @@ use CGI::Carp qw(warningsToBrowser fatalsToBrowser);
 use strict;
 
 # AMZL Specific Libraries
-use lib "/home/ericferg/mkp/bin/lib" ;
+use lib "/mkp/src/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
 
