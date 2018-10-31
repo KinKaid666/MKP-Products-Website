@@ -68,7 +68,7 @@ select a.mon
          and sc.start_date < fse.posted_dt
          and (sc.end_date is null or
               sc.end_date > fse.posted_dt)
-       where posted_dt >= DATE(NOW() - INTERVAL ? DAY)
+       where posted_dt >= NOW() - INTERVAL ? DAY
 ) a left outer join (
     select mon,
            sum(expenses) expenses
@@ -76,13 +76,13 @@ select a.mon
       select 'A' mon
              , sum(total) expenses
         from financial_expense_events fse
-       where expense_dt >= DATE(NOW() - INTERVAL ? DAY)
+       where expense_dt >= NOW() - INTERVAL ? DAY
        group by date_format(fse.expense_dt, "%m")
        union all
       select 'A'
              , sum(total) expenses
         from expenses fse
-       where expense_datetime >= DATE(NOW() - INTERVAL ? DAY)
+       where expense_datetime >= NOW() - INTERVAL ? DAY
        group by date_format(fse.expense_datetime, "%m")
     ) a group by a.mon
 ) b on a.mon = b.mon
