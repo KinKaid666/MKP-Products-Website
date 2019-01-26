@@ -136,6 +136,7 @@ print "<BR><TABLE id=\"pnl\">" .
       "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">To Buy \$</TH>"    .
       "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">Velocity</TH>"     .
       "<TH onclick=\"sortTable(13)\" style=\"cursor:pointer\">WOC</TH>"          .
+      "<TH onclick=\"sortTable(14)\" style=\"cursor:pointer\">Sold</TH>"         .
       "</TR>\n" ;
 while (my $ref = $ohi_sth->fetchrow_hashref())
 {
@@ -173,6 +174,7 @@ while (my $ref = $ohi_sth->fetchrow_hashref())
     print "<TD class=number>" . &format_currency($dollars_to_buy ,2)        . "</TD>" ;
     print "<TD class=number>" . &format_decimal($ref->{weekly_velocity},2)  . "</TD>" ;
     print "<TD class=number>" . &format_decimal($ref->{woc},2)              . "</TD>" ;
+    print "<TD class=number>" . &format_decimal($ref->{unit_count},0)       . "</TD>" ;
     print "</TR>\n" ;
 }
 print qq(</TBODY></TABLE> <script>
