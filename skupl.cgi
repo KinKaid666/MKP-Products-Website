@@ -187,7 +187,7 @@ print $cgi->end_table() ;
 print $cgi->end_form() ;
 
 
-$dbh = DBI->connect("DBI:mysql:database=mkp_products;host=localhost",
+$dbh = DBI->connect("DBI:mysql:database=mkp_products;host=mkp.cjulnvkhabig.us-east-2.rds.amazonaws.com",
                     "mkp_reporter",
                     "mkp_reporter_2018",
                     {PrintError => 0});
