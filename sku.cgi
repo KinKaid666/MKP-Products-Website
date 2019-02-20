@@ -393,50 +393,50 @@ while (my $ref = $pnl_sth->fetchrow_hashref())
 print "</TABLE>\n" ;
 $pnl_sth->finish() ;
 
-print "<h3>Order Details</h3>\n" ;
-print "<TABLE><TR>"                        .
-      "<TH>Posted Datetime</TH>"           .
-      "<TH>SKU</TH>"                       .
-      "<TH>Source Order Id</TH>"           .
-      "<TH>Type</TH>"                      .
-      "<TH>Quantity</TH>"                  .
-      "<TH>Product Charges</TH>"           .
-      "<TH>Product Charges Tax</TH>"       .
-      "<TH>Shipping Charges</TH>"          .
-      "<TH>Shipping Charges Tax</TH>"      .
-      "<TH>Giftwrap Charges</TH>"          .
-      "<TH>Giftwrap Charges Tax</TH>"      .
-      "<TH>Promotional Rebates</TH>"       .
-      "<TH>Markplace Facilitator Tax</TH>" .
-      "<TH>Other Fees</TH>"                .
-      "<TH>Selling Fees</TH>"              .
-      "<TH>FBA Fees</TH>"                  .
-      "<TH>Total</TH>"                     .
-      "</TR> \n" ;
-my $s_sth = $dbh->prepare(${\SKU_ORDER_DETAILS_SELECT_STATEMENT}) ;
-$s_sth->execute($sku) or die $DBI::errstr ;
-while (my $ref = $s_sth->fetchrow_hashref())
-{
-    print "<TR>" ;
-    print "<TD class=string>$ref->{posted_dt}</TD>" ;
-    print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>\n" ;
-    print "<TD class=string><a href=order.cgi?SOURCE_ORDER_ID=$ref->{source_order_id}>$ref->{source_order_id}</a></TD>" ;
-    print "<TD class=string>$ref->{event_type}</TD>" ;
-    print "<TD class=number>" . &format_integer($ref->{quantity})                . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{product_charges})             . ">" . &format_currency($ref->{product_charges},2)             . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{product_charges_tax})         . ">" . &format_currency($ref->{product_charges_tax},2)         . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{shipping_charges})            . ">" . &format_currency($ref->{shipping_charges},2)            . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{shipping_charges_tax})        . ">" . &format_currency($ref->{shipping_charges_tax},2)        . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{giftwrap_charges})            . ">" . &format_currency($ref->{giftwrap_charges},2)            . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{giftwrap_charges_tax})        . ">" . &format_currency($ref->{giftwrap_charges_tax},2)        . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{promotional_rebates})         . ">" . &format_currency($ref->{promotional_rebates},2)         . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{marketplace_facilitator_tax}) . ">" . &format_currency($ref->{marketplace_facilitator_tax},2) . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{other_fees})                  . ">" . &format_currency($ref->{other_fees},2)                  . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{selling_fees})                . ">" . &format_currency($ref->{selling_fees},2)                . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{fba_fees})                    . ">" . &format_currency($ref->{fba_fees},2)                    . "</TD>" ;
-    print "<TD class=number" . &add_neg_tag($ref->{total})                       . ">" . &format_currency($ref->{total},2)                       . "</TD>" ;
-    print "</TR>\n" ;
-}
+# print "<h3>Order Details</h3>\n" ;
+# print "<TABLE><TR>"                        .
+#       "<TH>Posted Datetime</TH>"           .
+#       "<TH>SKU</TH>"                       .
+#       "<TH>Source Order Id</TH>"           .
+#       "<TH>Type</TH>"                      .
+#       "<TH>Quantity</TH>"                  .
+#       "<TH>Product Charges</TH>"           .
+#       "<TH>Product Charges Tax</TH>"       .
+#       "<TH>Shipping Charges</TH>"          .
+#       "<TH>Shipping Charges Tax</TH>"      .
+#       "<TH>Giftwrap Charges</TH>"          .
+#       "<TH>Giftwrap Charges Tax</TH>"      .
+#       "<TH>Promotional Rebates</TH>"       .
+#       "<TH>Markplace Facilitator Tax</TH>" .
+#       "<TH>Other Fees</TH>"                .
+#       "<TH>Selling Fees</TH>"              .
+#       "<TH>FBA Fees</TH>"                  .
+#       "<TH>Total</TH>"                     .
+#       "</TR> \n" ;
+# my $s_sth = $dbh->prepare(${\SKU_ORDER_DETAILS_SELECT_STATEMENT}) ;
+# $s_sth->execute($sku) or die $DBI::errstr ;
+# while (my $ref = $s_sth->fetchrow_hashref())
+# {
+#     print "<TR>" ;
+#     print "<TD class=string>$ref->{posted_dt}</TD>" ;
+#     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>\n" ;
+#     print "<TD class=string><a href=order.cgi?SOURCE_ORDER_ID=$ref->{source_order_id}>$ref->{source_order_id}</a></TD>" ;
+#     print "<TD class=string>$ref->{event_type}</TD>" ;
+#     print "<TD class=number>" . &format_integer($ref->{quantity})                . "</TD>" ;
+#     print "<TD class=number" . &add_neg_tag($ref->{product_charges})             . ">" . &format_currency($ref->{product_charges},2)             . "</TD>" ;
+#     print "<TD class=number" . &add_neg_tag($ref->{product_charges_tax})         . ">" . &format_currency($ref->{product_charges_tax},2)         . "</TD>" ;
+#     print "<TD class=number" . &add_neg_tag($ref->{shipping_charges})            . ">" . &format_currency($ref->{shipping_charges},2)            . "</TD>" ;
+#     print "<TD class=number" . &add_neg_tag($ref->{shipping_charges_tax})        . ">" . &format_currency($ref->{shipping_charges_tax},2)        . "</TD>" ;
+#     print "<TD class=number" . &add_neg_tag($ref->{giftwrap_charges})            . ">" . &format_currency($ref->{giftwrap_charges},2)            . "</TD>" ;
+#     print "<TD class=number" . &add_neg_tag($ref->{giftwrap_charges_tax})        . ">" . &format_currency($ref->{giftwrap_charges_tax},2)        . "</TD>" ;
+#     print "<TD class=number" . &add_neg_tag($ref->{promotional_rebates})         . ">" . &format_currency($ref->{promotional_rebates},2)         . "</TD>" ;
+#     print "<TD class=number" . &add_neg_tag($ref->{marketplace_facilitator_tax}) . ">" . &format_currency($ref->{marketplace_facilitator_tax},2) . "</TD>" ;
+#     print "<TD class=number" . &add_neg_tag($ref->{other_fees})                  . ">" . &format_currency($ref->{other_fees},2)                  . "</TD>" ;
+#     print "<TD class=number" . &add_neg_tag($ref->{selling_fees})                . ">" . &format_currency($ref->{selling_fees},2)                . "</TD>" ;
+#     print "<TD class=number" . &add_neg_tag($ref->{fba_fees})                    . ">" . &format_currency($ref->{fba_fees},2)                    . "</TD>" ;
+#     print "<TD class=number" . &add_neg_tag($ref->{total})                       . ">" . &format_currency($ref->{total},2)                       . "</TD>" ;
+#     print "</TR>\n" ;
+# }
 $dbh->disconnect() ;
 
 sub add_neg_tag

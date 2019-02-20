@@ -13,6 +13,7 @@ use lib "/mkp/src/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
 
+use constant LOW_SKU_VELOCITY_THRESHOLD => 13 ;
 use constant SKU_OHI_SELECT_STATEMENT => qq(
     select so.sku
            ,s.title
@@ -59,6 +60,7 @@ my $username = &validate() ;
 my $cgi = CGI->new() ;
 my $days = $cgi->param('days') || 90 ;
 my $woc = $cgi->param('woc') || 6 ;
+my $lvt = $cgi->param('lvt') || ${\LOW_SKU_VELOCITY_THRESHOLD}   ;
 my $buy_amount = $cgi->param('buy_amount') || 2500 ;
 my $dbh ;
 
@@ -103,6 +105,15 @@ print $cgi->Tr(
                                       -maxlength => 30,))
       ) ;
 print $cgi->Tr(
+            $cgi->td({ -class => "string" },
+                     "Low Velocity Threshold:"),
+            $cgi->td({ -class => "number" },
+                     $cgi->textfield( -name      => 'lvt',
+                                      -value     => $lvt,
+                                      -size      => 20,
+                                      -maxlength => 30,))
+      ) ;
+print $cgi->Tr(
             $cgi->td($cgi->submit( -name     => 'download_form',
                                    -value    => 'Download',
                                    -onsubmit => '')),
@@ -140,6 +151,26 @@ print "<BR><TABLE id=\"pnl\">" .
       "</TR>\n" ;
 while (my $ref = $ohi_sth->fetchrow_hashref())
 {
+    my $units_to_cover = (floor($ref->{weekly_velocity} * $woc) < 0 ? 0 : (floor($ref->{weekly_velocity} * $woc))) ;
+    my $dollars_to_cover = $units_to_cover * $ref->{cost} ;
+    my $units_to_buy = ($units_to_cover < $ref->{quantity_total} ? 0 : ($units_to_cover - $ref->{quantity_total})) ;
+
+    #
+    # don't buy back into slow selling SKUs
+    $units_to_buy = $ref->{unit_count} if($units_to_buy and $ref->{unit_count} < ${\LOW_SKU_VELOCITY_THRESHOLD}) ;
+
+    #
+    # Round up to the next pack size
+    my $vendor_units_to_buy = $units_to_buy * $ref->{pack_size} ;
+
+
+    # convert to dollars
+    my $dollars_to_buy = $units_to_buy * $ref->{cost} ;
+
+    # Don't bother 
+    next if (not $units_to_buy) ;
+
+    # print
     print "<TR>" ;
     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
     print "<TD class=string>$ref->{title}</TD>" ;
@@ -155,16 +186,6 @@ while (my $ref = $ohi_sth->fetchrow_hashref())
         print "<TD class=string><a href=http://$ref->{source_name}>$ref->{source_name}</a></TD>" ;
     }
 
-    my $units_to_cover = (floor($ref->{weekly_velocity} * $woc) < 0 ? 0 : (floor($ref->{weekly_velocity} * $woc))) ;
-    my $dollars_to_cover = $units_to_cover * $ref->{cost} ;
-    my $units_to_buy = ($units_to_cover < $ref->{quantity_total} ? 0 : ($units_to_cover - $ref->{quantity_total})) ;
-
-    #
-    # Round up to the next pack size
-    my $vendor_units_to_buy = $units_to_buy * $ref->{pack_size} ;
-
-    # convert to dollars
-    my $dollars_to_buy = $units_to_buy * $ref->{cost} ;
 
     print "<TD class=number>" . &format_integer($ref->{quantity_total})     . "</TD>" ;
     print "<TD class=number>" . &format_integer($units_to_cover)            . "</TD>" ;
