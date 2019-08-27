@@ -157,7 +157,7 @@ while (my $ref = $ohi_sth->fetchrow_hashref())
 
     #
     # don't buy back into slow selling SKUs
-    $units_to_buy = $ref->{unit_count} if($units_to_buy and $ref->{unit_count} < ${\LOW_SKU_VELOCITY_THRESHOLD}) ;
+    $units_to_buy = $ref->{unit_count} if($units_to_buy and $ref->{unit_count} < $lvt) ;
 
     #
     # Round up to the next pack size

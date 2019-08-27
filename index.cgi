@@ -34,6 +34,7 @@ select a.posted_dt date
        where posted_dt >= DATE(NOW() - INTERVAL ? DAY)
        group by date_format(posted_dt, "%Y-%m-%d")
 ) a left outer join (
+    select posted_dt, sum(expenses) expenses from (
       select date_format(expense_dt, "%Y-%m-%d") posted_dt
              , sum(total) expenses
         from financial_expense_events fse
@@ -45,6 +46,7 @@ select a.posted_dt date
         from expenses fse
        where expense_datetime >= DATE(NOW() - INTERVAL ? DAY)
        group by date_format(expense_datetime, "%Y-%m-%d")
+    ) c group by posted_dt
 ) b on a.posted_dt = b.posted_dt
 group by a.posted_dt
 order by a.posted_dt desc
@@ -73,6 +75,7 @@ select a.mon
     select mon,
            sum(expenses) expenses
     from (
+     select mon, expenses from (
       select 'A' mon
              , sum(total) expenses
         from financial_expense_events fse
@@ -84,6 +87,7 @@ select a.mon
         from expenses fse
        where expense_datetime >= NOW() - INTERVAL ? DAY
        group by date_format(fse.expense_datetime, "%m")
+     ) c group by mon
     ) a group by a.mon
 ) b on a.mon = b.mon
 group by a.mon
