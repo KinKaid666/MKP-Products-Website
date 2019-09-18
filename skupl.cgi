@@ -145,7 +145,7 @@ my $dbh ;
 my $username = &validate() ;
 my $cgi = CGI->new() ;
 my $days = $cgi->param('days') || 90 ;
-my $show_active = $cgi->param('show_active') ;
+my $show_active = $cgi->param('show_active') || 1 ;
 
 
 print $cgi->header;

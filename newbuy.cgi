@@ -22,6 +22,7 @@ use constant SKU_OHI_SELECT_STATEMENT => qq(
            ,ifnull(scp.pack_size,1) pack_size
            ,ifnull(ri.source_name, "N/A") source_name
            ,ifnull(ri.quantity_total, 0) quantity_total
+           ,ifnull(acts.active,0) is_active
            ,sc.cost cost
            ,count(distinct so.source_order_id      ) order_count
            ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) unit_count
@@ -36,10 +37,12 @@ use constant SKU_OHI_SELECT_STATEMENT => qq(
        and sc.start_date < so.posted_dt
        and (sc.end_date is null or
             sc.end_date > so.posted_dt)
-     left outer join realtime_inventory ri
-       on ri.sku = so.sku
+      left outer join realtime_inventory ri
+        on ri.sku = so.sku
       join skus s
         on sc.sku = s.sku
+      left outer join active_sources acts
+        on acts.sku = s.sku
       join vendors v
         on v.vendor_name = s.vendor_name
       left outer join sku_case_packs scp
@@ -62,6 +65,7 @@ my $days = $cgi->param('days') || 90 ;
 my $woc = $cgi->param('woc') || 6 ;
 my $lvt = $cgi->param('lvt') || ${\LOW_SKU_VELOCITY_THRESHOLD}   ;
 my $buy_amount = $cgi->param('buy_amount') || 2500 ;
+my $show_active = $cgi->param('show_active') || 1 ;
 my $dbh ;
 
 print $cgi->header;
@@ -113,6 +117,14 @@ print $cgi->Tr(
                                       -size      => 20,
                                       -maxlength => 30,))
       ) ;
+print $cgi->Tr(
+            $cgi->td({ -class => "string" },
+                     "Settings:"),
+            $cgi->td($cgi->checkbox( -name      => 'show_active',
+                                     -checked   => $show_active,
+                                     -label     => "Show only active"))
+      ) ;
+
 print $cgi->Tr(
             $cgi->td($cgi->submit( -name     => 'download_form',
                                    -value    => 'Download',
@@ -168,7 +180,7 @@ while (my $ref = $ohi_sth->fetchrow_hashref())
     my $dollars_to_buy = $units_to_buy * $ref->{cost} ;
 
     # Don't bother 
-    next if (not $units_to_buy) ;
+    next if (not $units_to_buy || (not $ref->{is_active} and $show_active)) ;
 
     # print
     print "<TR>" ;
