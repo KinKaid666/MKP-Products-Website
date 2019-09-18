@@ -7,6 +7,7 @@ use CGI ;
 use CGI::Carp qw(fatalsToBrowser); # Remove this in production
 use POSIX ;
 use Locale::Currency::Format ;
+use Data::Dumper ;
 
 # AMZL Specific Libraries
 use lib "/mkp/src/bin/lib" ;
@@ -65,7 +66,7 @@ my $days = $cgi->param('days') || 90 ;
 my $woc = $cgi->param('woc') || 6 ;
 my $lvt = $cgi->param('lvt') || ${\LOW_SKU_VELOCITY_THRESHOLD}   ;
 my $buy_amount = $cgi->param('buy_amount') || 2500 ;
-my $show_active = $cgi->param('show_active') || 1 ;
+my @show_active = $cgi->param('show_active') ;
 my $dbh ;
 
 print $cgi->header;
@@ -120,9 +121,10 @@ print $cgi->Tr(
 print $cgi->Tr(
             $cgi->td({ -class => "string" },
                      "Settings:"),
-            $cgi->td($cgi->checkbox( -name      => 'show_active',
-                                     -checked   => $show_active,
-                                     -label     => "Show only active"))
+            $cgi->td($cgi->checkbox( -name    => 'show_active',
+                                     -checked => 0,
+                                     -value   => 1,
+                                     -label   => "Show only active"))
       ) ;
 
 print $cgi->Tr(
@@ -179,8 +181,8 @@ while (my $ref = $ohi_sth->fetchrow_hashref())
     # convert to dollars
     my $dollars_to_buy = $units_to_buy * $ref->{cost} ;
 
-    # Don't bother 
-    next if (not $units_to_buy || (not $ref->{is_active} and $show_active)) ;
+    # Don't bother
+    next if (not $units_to_buy or (not $ref->{is_active} and @show_active[0])) ;
 
     # print
     print "<TR>" ;

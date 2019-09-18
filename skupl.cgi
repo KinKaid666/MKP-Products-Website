@@ -145,7 +145,7 @@ my $dbh ;
 my $username = &validate() ;
 my $cgi = CGI->new() ;
 my $days = $cgi->param('days') || 90 ;
-my $show_active = $cgi->param('show_active') || 1 ;
+my @show_active = $cgi->param('show_active') ;
 
 
 print $cgi->header;
@@ -174,7 +174,8 @@ print $cgi->Tr(
             $cgi->td({ -class => "string" },
                      "Settings:"),
             $cgi->td($cgi->checkbox( -name      => 'show_active',
-                                     -checked   => $show_active,
+                                     -checked   => 0,
+                                     -value     => 1,
                                      -label     => "Show only active"))
       ) ;
 print $cgi->Tr(
@@ -222,7 +223,7 @@ print "<TABLE id=\"pnl\">"           .
       "</TR>\n" ;
 while (my $ref = $s_sth->fetchrow_hashref())
 {
-    next if ($show_active and not $ref->{is_active}) ;
+    next if (@show_active[0] and not $ref->{is_active}) ;
     print "<TR>" ;
     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
     print "<TD class=string>$ref->{vendor_name}</TD>" ;
