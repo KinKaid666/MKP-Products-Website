@@ -33,11 +33,8 @@ use constant SKU_OHI_SELECT_STATEMENT => qq(
                    (sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
                    ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/7)) woc
       from financial_shipment_events so
-      join sku_costs sc
-        on so.sku = sc.sku
-       and sc.start_date < so.posted_dt
-       and (sc.end_date is null or
-            sc.end_date > so.posted_dt)
+      join (select max(start_date), sku, cost from sku_costs group by sku) sc
+        on sc.sku = so.sku
       left outer join realtime_inventory ri
         on ri.sku = so.sku
       join skus s
