@@ -96,6 +96,8 @@ group by a.mon
 use constant TOTAL_INVENTORY_COST => qq(
     select sum(ri.quantity_instock * sc.cost) instock_cost
            ,sum(ri.quantity_total * sc.cost) total_cost
+           ,sum(ri.quantity_instock) instock_units
+           ,sum(ri.quantity_total) total_units
       from realtime_inventory ri
       join sku_costs sc
         on ri.sku = sc.sku
@@ -195,7 +197,8 @@ $mtd_sth->finish() ;
 print $cgi->h3("Inventory") ;
 print "<TABLE><TR>"              .
       "<TH>Type</TH>"            .
-      "<TH>Total</TH>"           .
+      "<TH>Total (\$\$)</TH>"           .
+      "<TH>Total (units)</TH>"           .
       "<TH>Coverage (days)</TH>" .
       "</TR> \n" ;
 #
@@ -206,6 +209,7 @@ my $inv_row = $inv_sth->fetchrow_hashref() ;
 print "<TR>\n" ;
 print "<TD class=string>In-stock</TD>\n" ;
 print "<TD class=number>" . &format_currency($inv_row->{instock_cost},0) . "</TD>\n" ;
+print "<TD class=number>" . &format_decimal($inv_row->{instock_units},0) . "</TD>\n" ;
 if(defined $mtd_row->{cogs} and $mtd_row->{cogs} != 0)
 {
     print "<TD class=number>" . &format_decimal(-1 * ($inv_row->{instock_cost}/($mtd_row->{cogs}/$mdays)),2) . "</TD>\n" ;
@@ -218,6 +222,7 @@ print "</TR>\n" ;
 print "<TR>\n" ;
 print "<TD class=string>Total</TD>\n" ;
 print "<TD class=number>" . &format_currency($inv_row->{total_cost},0) . "</TD>\n" ;
+print "<TD class=number>" . &format_decimal($inv_row->{total_units},0) . "</TD>\n" ;
 if(defined $mtd_row->{cogs} and $mtd_row->{cogs} != 0)
 {
     print "<TD class=number>" . &format_decimal(-1 * ($inv_row->{total_cost}/($mtd_row->{cogs}/$mdays)),2) . "</TD>\n" ;
