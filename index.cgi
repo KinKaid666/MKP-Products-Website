@@ -75,17 +75,18 @@ select a.mon
     select mon,
            sum(expenses) expenses
     from (
-     select mon, expenses from (
+     select mon, sum(expenses) expenses from (
       select 'A' mon
              , sum(total) expenses
         from financial_expense_events fse
        where expense_dt >= NOW() - INTERVAL ? DAY
        group by date_format(fse.expense_dt, "%m")
        union all
-      select 'A'
+      select 'A' mon
              , sum(total) expenses
         from expenses fse
        where expense_datetime >= NOW() - INTERVAL ? DAY
+         and expense_datetime <= NOW() - INTERVAL 1 DAY
        group by date_format(fse.expense_datetime, "%m")
      ) c group by mon
     ) a group by a.mon
@@ -194,6 +195,8 @@ print "</TR>\n" ;
 print "</TABLE>\n" ;
 $mtd_sth->finish() ;
 
+#
+# Total Inventory
 print $cgi->h3("Inventory") ;
 print "<TABLE><TR>"              .
       "<TH>Type</TH>"            .
@@ -201,8 +204,6 @@ print "<TABLE><TR>"              .
       "<TH>Total (units)</TH>"           .
       "<TH>Coverage (days)</TH>" .
       "</TR> \n" ;
-#
-# Add Total Inventory
 my $inv_sth = $dbh->prepare(${\TOTAL_INVENTORY_COST}) ;
 $inv_sth->execute() or die $DBI::errstr ;
 my $inv_row = $inv_sth->fetchrow_hashref() ;
