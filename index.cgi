@@ -80,14 +80,12 @@ select a.mon
              , sum(total) expenses
         from financial_expense_events fse
        where expense_dt >= NOW() - INTERVAL ? DAY
-       group by date_format(fse.expense_dt, "%m")
        union all
       select 'A' mon
              , sum(total) expenses
         from expenses fse
        where expense_datetime >= NOW() - INTERVAL ? DAY
          and expense_datetime <= NOW() - INTERVAL 1 DAY
-       group by date_format(fse.expense_datetime, "%m")
      ) c group by mon
     ) a group by a.mon
 ) b on a.mon = b.mon
