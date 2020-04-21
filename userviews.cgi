@@ -21,7 +21,7 @@ use constant LAST_USER_VIEWS => qq(
       from user_views uv
       join users u
         on u.username = uv.username
-     where uv.creation_time >= date_format(NOW(), "%Y-%m-%d")
+     where uv.creation_time > NOW() - INTERVAL 7 DAY
      order by uv.creation_time desc limit 10
 ) ;
 
