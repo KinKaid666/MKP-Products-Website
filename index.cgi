@@ -236,6 +236,8 @@ $inv_sth->finish() ;
 
 
 print $cgi->br() ;
+print $cgi->a({href => "/get-orders.cgi"}, "Get Amazon Orders" ) ;
+print $cgi->br() ;
 print $cgi->a({href => "/pl.cgi"}, "Profit and Loss Statement") ; print " " ;
 print $cgi->a({href => "/pl.cgi?granularity=WEEKLY"}, "(weekly)") ;
 print $cgi->br() ;
@@ -277,6 +279,16 @@ print $cgi->Tr(
                                       -size      => 20,
                                       -maxlength => 30,))
       ) ;
+
+print $cgi->Tr(
+            $cgi->td({ -class => "string" },
+                     "Order Lookup:"),
+            $cgi->td({ -class => "string" },
+                     $cgi->textfield( -name      => 'order',
+                                      -value     => $order,
+                                      -size      => 20,
+                                      -maxlength => 30,))
+      ) if $cgi->param('debug') ;
 print $cgi->end_table() ;
 print $cgi->submit( -name     => 'submit_form',
                     -value    => 'Submit') ;
