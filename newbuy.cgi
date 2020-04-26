@@ -63,7 +63,13 @@ my $days = $cgi->param('days') || 90 ;
 my $woc = $cgi->param('woc') || 6 ;
 my $lvt = $cgi->param('lvt') || ${\LOW_SKU_VELOCITY_THRESHOLD}   ;
 my $buy_amount = $cgi->param('buy_amount') || 2500 ;
-my @show_active = $cgi->param('show_active') ;
+my $show_only_active = 'on' ;
+
+if($cgi->param('submit_form'))
+{
+    $show_only_active = $cgi->param('show_active') ;
+}
+
 my $dbh ;
 
 print $cgi->header;
@@ -81,7 +87,7 @@ print $cgi->start_form(
 print $cgi->start_table ;
 print $cgi->Tr(
             $cgi->td({ -class => "string" },
-                     "Days of History:"),
+                     "Days of History"),
             $cgi->td({ -class => "number" },
                      $cgi->textfield( -name      => 'days',
                                       -value     => $days,
@@ -90,7 +96,7 @@ print $cgi->Tr(
       ) ;
 print $cgi->Tr(
             $cgi->td({ -class => "string" },
-                     "Buy Amount:"),
+                     "Buy Amount"),
             $cgi->td({ -class => "number" },
                      $cgi->textfield( -name      => 'buy amount',
                                       -value     => $buy_amount,
@@ -99,7 +105,7 @@ print $cgi->Tr(
       ) ;
 print $cgi->Tr(
             $cgi->td({ -class => "string" },
-                     "Weeks of Coverage Goal:"),
+                     "Weeks of Coverage Goal"),
             $cgi->td({ -class => "number" },
                      $cgi->textfield( -name      => 'woc',
                                       -value     => $woc,
@@ -108,7 +114,7 @@ print $cgi->Tr(
       ) ;
 print $cgi->Tr(
             $cgi->td({ -class => "string" },
-                     "Low Velocity Threshold:"),
+                     "Low Velocity Threshold"),
             $cgi->td({ -class => "number" },
                      $cgi->textfield( -name      => 'lvt',
                                       -value     => $lvt,
@@ -116,11 +122,9 @@ print $cgi->Tr(
                                       -maxlength => 30,))
       ) ;
 print $cgi->Tr(
-            $cgi->td({ -class => "string" },
-                     "Settings:"),
+            $cgi->td({ -class => "string" }, "Settings"),
             $cgi->td($cgi->checkbox( -name    => 'show_active',
-                                     -checked => 0,
-                                     -value   => 1,
+                                     -checked => 'on',
                                      -label   => "Show only active"))
       ) ;
 
@@ -179,7 +183,7 @@ while (my $ref = $ohi_sth->fetchrow_hashref())
     my $dollars_to_buy = $units_to_buy * $ref->{cost} ;
 
     # Don't bother
-    next if (not $units_to_buy or (not $ref->{is_active} and @show_active[0])) ;
+    next if (not $units_to_buy or (not $ref->{is_active} and $show_only_active eq 'on')) ;
 
     # print
     print "<TR>" ;
