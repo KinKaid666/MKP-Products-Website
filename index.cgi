@@ -140,14 +140,14 @@ my $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=mkp.cjulnvkhabig.us
     my $row = $latest_sth->fetchrow_hashref() ;
 
     print $cgi->small($cgi->i($cgi->b("Latest "))) ;
-    print $cgi->small($cgi->i($cgi->b(" inventory: ") . $row->{latest_report} . " ET")) ;
+    print $cgi->small($cgi->i($cgi->b(" inventory: ") . &format_date($row->{latest_report}))) ;
 }
 {
     my $latest_sth = $dbh->prepare(${\LATEST_ORDER}) ;
     $latest_sth->execute() or die $DBI::errstr ;
     my $row = $latest_sth->fetchrow_hashref() ;
 
-    print $cgi->small($cgi->i($cgi->b(" order: ") . $row->{latest_order} . " ET")) ;
+    print $cgi->small($cgi->i($cgi->b(" order: ") . &format_date($row->{latest_order}))) ;
 }
 
 my $s_sth = $dbh->prepare(${\TRAILING_DAY_SALES}) ;

@@ -196,12 +196,12 @@ if( exists $req->{Orders}->{Order} )
             print "<TR>" ;
             print &format_html_column($count++,0,"number") ;
             print &format_html_column("<a href=order.cgi?SOURCE_ORDER_ID=$order->{AmazonOrderId}>$order->{AmazonOrderId}</a>",0,"string") ;
-            print &format_html_column($order->{PurchaseDate},0,"string") ;
-            print &format_html_column($order->{LatestShipDate},0,"string") ;
+            print &format_html_column(&format_date($order->{PurchaseDate}),0,"string") ;
+            print &format_html_column(&format_date($order->{LatestShipDate}),0,"string") ;
             print &format_html_column($order->{OrderType},0,"string") ;
             print &format_html_column(&format_currency($order->{OrderTotal}->{Amount},2),0,"number") ;
             print &format_html_column($order->{OrderStatus},0,"string") ;
-            print &format_html_column($order->{LastUpdateDate},0,"string") ;
+            print &format_html_column(&format_date($order->{LastUpdateDate}),0,"string") ;
             print &format_html_column($order->{ShipmentServiceLevelCategory},0,"string") ;
             print "</TR>" ;
         }
