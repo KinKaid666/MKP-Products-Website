@@ -52,6 +52,10 @@ print $cgi->start_html( -title => "MKP Products Financials",
                         -head => [$cgi->Link({-rel=>'shortcut icon',
                                               -href=>'favicon.png'})]);
 
+print $cgi->a( { -href => "/" }, "Back" ) ;
+print $cgi->br() ;
+print $cgi->br() ;
+
 my $dbh ;
 $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=mkp.cjulnvkhabig.us-east-2.rds.amazonaws.com",
                     "mkp_reporter",

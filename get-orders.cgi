@@ -68,6 +68,9 @@ print $cgi->start_html( -title => "MKP Products Amazon Unshipped Orders",
                         -style => {'src'=>'http://prod.mkpproducts.com/style.css'},
                         -head => [$cgi->Link({-rel=>'shortcut icon',
                                               -href=>'favicon.png'})]);
+print $cgi->a( { -href => "/" }, "Back" ) ;
+print $cgi->br() ;
+print $cgi->br() ;
 print $cgi->start_form(
     -name    => 'main_form',
     -method  => 'POST',
@@ -170,7 +173,7 @@ if($cgi->param('verbose'))
     print $cgi->print("<BR>DEBUG: ". Dumper($arguments)) ;
 }
 
-if($start ne "")
+if($start ne "" and defined $cgi->param('submit_form'))
 {
     $req = $mws->ListOrders(%$arguments) ;
 }
@@ -184,6 +187,8 @@ if( exists $req->{Orders}->{Order} )
           "<TH>Purchase Date</TH>"                   .
           "<TH>Latest Ship Date</TH>"                .
           "<TH>Order Type</TH>"                      .
+          "<TH>Fulfillment Channel</TH>"             .
+          "<TH>Is Prime</TH>"                        .
           "<TH>Order Total</TH>"                     .
           "<TH>Order Status</TH>"                    .
           "<TH>Last Update Date</TH>"                .
@@ -199,6 +204,8 @@ if( exists $req->{Orders}->{Order} )
             print &format_html_column(&format_date($order->{PurchaseDate}),0,"string") ;
             print &format_html_column(&format_date($order->{LatestShipDate}),0,"string") ;
             print &format_html_column($order->{OrderType},0,"string") ;
+            print &format_html_column($order->{FulfillmentChannel},0,"string") ;
+            print &format_html_column($order->{IsPrime},0,"string") ;
             print &format_html_column(&format_currency($order->{OrderTotal}->{Amount},2),0,"number") ;
             print &format_html_column($order->{OrderStatus},0,"string") ;
             print &format_html_column(&format_date($order->{LastUpdateDate}),0,"string") ;
@@ -207,7 +214,6 @@ if( exists $req->{Orders}->{Order} )
         }
         last if( not defined $req->{NextToken} ) ;
         $req = $mws->ListOrdersByNextToken(NextToken => $req->{NextToken}) ;
-        sleep(60) ;
     }
     print "</TABLE>\n" ;
 }

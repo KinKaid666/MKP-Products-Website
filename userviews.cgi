@@ -76,6 +76,10 @@ print $cgi->start_html( -title => "MKP Products Financials",
                         -head => [$cgi->Link({-rel=>'shortcut icon',
                                               -href=>'favicon.png'})]);
 
+print $cgi->a( { -href => "/" }, "Back" ) ; 
+print $cgi->br() ;
+print $cgi->br() ;
+
 {
     print $cgi->h3("Last Login") ;
     my $s_sth = $userdbh->prepare(${\LAST_VIEW}) ;
