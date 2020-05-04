@@ -53,7 +53,7 @@ print $cgi->start_html( -title => "MKP Products Inbound Shipment Items",
                         -head => [$cgi->Link({-rel=>'shortcut icon',
                                               -href=>'favicon.png'})]);
 
-print $cgi->a( { -href => "/" }, "Back" ) ; 
+print $cgi->a( { -href => $ENV{HTTP_REFERER} }, "Back" ) ; 
 print $cgi->br() ;
 print $cgi->br() ;
 
