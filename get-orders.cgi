@@ -19,7 +19,7 @@ use lib "/mkp/src/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
 use MKPDatabase ;
-use MWSMWS ;
+use MKPMWS ;
 
 my $username = &validate() ;
 my $cgi = CGI->new() ;
