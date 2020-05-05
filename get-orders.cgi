@@ -18,12 +18,8 @@ use Date::Manip ;
 use lib "/mkp/src/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
-
-use constant SELECT_ORDER_CHANNEL_CREDENTIALS => qq(
-    select credentials
-      from order_channel_credentials
-     where source_name = ?
-) ;
+use MKPDatabase ;
+use MWSMWS ;
 
 my $username = &validate() ;
 my $cgi = CGI->new() ;
@@ -127,33 +123,6 @@ print $cgi->end_table() ;
 print $cgi->submit( -name     => 'submit_form',
                     -value    => 'Submit') ;
 print $cgi->end_form() ;
-
-my $dbh ;
-$dbh = DBI->connect("DBI:mysql:database=mkp_products;host=mkp.cjulnvkhabig.us-east-2.rds.amazonaws.com",
-                    "mkp_reporter",
-                    "mkp_reporter_2018",
-                    {PrintError => 0});
-
-my $mws ;
-{
-    my $credentials ;
-    my $sth = $dbh->prepare(${\SELECT_ORDER_CHANNEL_CREDENTIALS}) ;
-    $sth->execute('www.amazon.com') or die $sth->errstr ;
-    if( $sth->rows != 1 )
-    {
-        die "Found incorrect number of credentials" ;
-    }
-    my $string = $sth->fetchrow_hashref() ;
-    foreach my $cred (split(',', $string->{credentials}))
-    {
-        my ($key,$value) = split('=',$cred) ;
-        $value =~ s/^"(.*)"$/$1/g ;
-        $credentials->{$key} = $value ;
-    }
-    $credentials->{logfile} = "/tmp/mws_www_orders.txt" ;
-    $credentials->{debug} = 1 ;
-    $mws = Amazon::MWS::Client->new(%$credentials) ;
-}
 
 my @orders ;
 my $orderItems ;

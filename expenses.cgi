@@ -10,6 +10,7 @@ use Locale::Currency::Format ;
 
 # AMZL Specific Libraries
 use lib "/mkp/src/bin/lib" ;
+use MKPDatabase ;
 use MKPFormatter ;
 use MKPUser ;
 
@@ -96,21 +97,15 @@ print $cgi->a( { -href => $ENV{HTTP_REFERER} }, "Back" ) ;
 print $cgi->br() ;
 print $cgi->br() ;
 
-my $dbh ;
-$dbh = DBI->connect("DBI:mysql:database=mkp_products;host=mkp.cjulnvkhabig.us-east-2.rds.amazonaws.com",
-                    "mkp_reporter",
-                    "mkp_reporter_2018",
-                    {PrintError => 0});
-
 my $expenses_sth ;
 if( defined $week )
 {
-    $expenses_sth = $dbh->prepare(${\WEEKLY_EXPENSES_SELECT_STATEMENT}) ;
+    $expenses_sth = $mwsDBro->prepare(${\WEEKLY_EXPENSES_SELECT_STATEMENT}) ;
     $expenses_sth->execute("$year-$week","$year-$week") or die $DBI::errstr ;
 }
 else
 {
-    $expenses_sth = $dbh->prepare(${\MONTHLY_EXPENSES_SELECT_STATEMENT}) ;
+    $expenses_sth = $mwsDBro->prepare(${\MONTHLY_EXPENSES_SELECT_STATEMENT}) ;
     $expenses_sth->execute($year,$month,$year,$month) or die $DBI::errstr ;
 }
 

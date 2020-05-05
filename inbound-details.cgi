@@ -12,6 +12,7 @@ use Locale::Currency::Format ;
 use lib "/mkp/src/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
+use MKPDatabase ;
 
 use constant INBOUND_SHIPMENT_ITEMS_SQL => qq(
     select ib.id
@@ -57,13 +58,7 @@ print $cgi->a( { -href => $ENV{HTTP_REFERER} }, "Back" ) ;
 print $cgi->br() ;
 print $cgi->br() ;
 
-my $dbh ;
-$dbh = DBI->connect("DBI:mysql:database=mkp_products;host=mkp.cjulnvkhabig.us-east-2.rds.amazonaws.com",
-                    "mkp_reporter",
-                    "mkp_reporter_2018",
-                    {PrintError => 0});
-
-my $s_sth = $dbh->prepare(${\INBOUND_SHIPMENT_ITEMS_SQL}) ;
+my $s_sth = $mkpDBro->prepare(${\INBOUND_SHIPMENT_ITEMS_SQL}) ;
 $s_sth->execute($id) or die $DBI::errstr ;
 print "<TABLE><TR>"            .
       "<TH>Id</TH>"            .
@@ -92,4 +87,4 @@ while (my $ref = $s_sth->fetchrow_hashref())
 }
 print "</TABLE>\n" ;
 $s_sth->finish() ;
-$dbh->disconnect() ;
+$mkpDBro->disconnect() ;

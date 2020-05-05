@@ -18,6 +18,7 @@ use constant WOC_ID_AMBER => 4 ;
 use lib "/mkp/src/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
+use MKPDatabase ;
 
 use constant SKU_PNL_SELECT_STATEMENT => qq(
     select oldest_order
@@ -141,7 +142,6 @@ use constant SKU_PNL_SELECT_STATEMENT => qq(
     order by weekly_velocity desc
 ) ;
 
-my $dbh ;
 my $username = &validate() ;
 my $cgi = CGI->new() ;
 my $days = $cgi->param('days') || 90 ;
@@ -194,13 +194,7 @@ print $cgi->Tr(
 print $cgi->end_table() ;
 print $cgi->end_form() ;
 
-
-$dbh = DBI->connect("DBI:mysql:database=mkp_products;host=mkp.cjulnvkhabig.us-east-2.rds.amazonaws.com",
-                    "mkp_reporter",
-                    "mkp_reporter_2018",
-                    {PrintError => 0});
-
-my $s_sth = $dbh->prepare(${\SKU_PNL_SELECT_STATEMENT}) ;
+my $s_sth = $mkpDBro->prepare(${\SKU_PNL_SELECT_STATEMENT}) ;
 $s_sth->execute($days, $days, $days, $days, $days, $days, $days, $days, $days) or die $DBI::errstr ;
 print "<TABLE id=\"pnl\">"           .
       "<TBODY><TR>"                  .
@@ -348,7 +342,7 @@ function sortTable(n) {
 }
 </script> </BODY> </HTML>) ;
 $s_sth->finish() ;
-$dbh->disconnect() ;
+$mkpDBro->disconnect() ;
 
 sub add_neg_tag
 {

@@ -12,6 +12,7 @@ use Locale::Currency::Format ;
 use lib "/mkp/src/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
+use MKPDatabase ;
 
 use constant INVENTORY_SQL => qq(
     select ri.sku
@@ -42,13 +43,7 @@ print $cgi->a( { -href => "/" }, "Back" ) ;
 print $cgi->br() ;
 print $cgi->br() ;
 
-my $dbh ;
-$dbh = DBI->connect("DBI:mysql:database=mkp_products;host=mkp.cjulnvkhabig.us-east-2.rds.amazonaws.com",
-                    "mkp_reporter",
-                    "mkp_reporter_2018",
-                    {PrintError => 0});
-
-my $s_sth = $dbh->prepare(${\INVENTORY_SQL}) ;
+my $s_sth = $mkpDBro->prepare(${\INVENTORY_SQL}) ;
 $s_sth->execute() or die $DBI::errstr ;
 print "<TABLE><TR>"                .
       "<TH>SKU</TH>"               .
@@ -78,4 +73,4 @@ while (my $ref = $s_sth->fetchrow_hashref())
 }
 print "</TABLE>\n" ;
 $s_sth->finish() ;
-$dbh->disconnect() ;
+$mkpDBro->disconnect() ;

@@ -12,6 +12,7 @@ use Locale::Currency::Format ;
 use lib "/mkp/src/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
+use MKPDatabase ;
 
 use constant ORDER_PNL_SELECT_STATEMENT => qq(
     select date_format(so.posted_dt,"%Y") year
@@ -85,13 +86,7 @@ print $cgi->a( { -href => "/" }, "Back" ) ;
 print $cgi->br() ;
 print $cgi->br() ;
 
-my $dbh ;
-$dbh = DBI->connect("DBI:mysql:database=mkp_products;host=mkp.cjulnvkhabig.us-east-2.rds.amazonaws.com",
-                    "mkp_reporter",
-                    "mkp_reporter_2018",
-                    {PrintError => 0});
-
-my $pnl_sth = $dbh->prepare(${\ORDER_PNL_SELECT_STATEMENT}) ;
+my $pnl_sth = $mkpDBro->prepare(${\ORDER_PNL_SELECT_STATEMENT}) ;
 $pnl_sth->execute($sku) or die $DBI::errstr ;
 
 print "<TABLE><TR>"                  .
@@ -127,7 +122,7 @@ print "</TABLE>\n" ;
 $pnl_sth->finish() ;
 
 print "<BR><BR>" ;
-my $s_sth = $dbh->prepare(${\ORDER_DETAILS_SELECT_STATEMENT}) ;
+my $s_sth = $mkpDBro->prepare(${\ORDER_DETAILS_SELECT_STATEMENT}) ;
 $s_sth->execute($sku) or die $DBI::errstr ;
 
 print "<TABLE><TR>"                        .
@@ -171,7 +166,7 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "<TD class=number" . &add_neg_tag($ref->{total})                       . ">" . &format_currency($ref->{total},2)                       . "</TD>" ;
     print "</TR>" ;
 }
-$dbh->disconnect() ;
+$mkpDBro->disconnect() ;
 
 sub add_neg_tag
 {

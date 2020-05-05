@@ -13,6 +13,7 @@ use Data::Dumper ;
 use lib "/mkp/src/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
+use MKPDatabase ;
 
 use constant LOW_SKU_VELOCITY_THRESHOLD => 13 ;
 use constant SKU_OHI_SELECT_STATEMENT => qq(
@@ -69,8 +70,6 @@ if($cgi->param('submit_form'))
 {
     $show_only_active = $cgi->param('show_active') ;
 }
-
-my $dbh ;
 
 print $cgi->header;
 print $cgi->start_html( -title => "MKP Products New Buy",
@@ -142,12 +141,7 @@ print $cgi->Tr(
       );
 print $cgi->end_table() ;
 print $cgi->end_form() ;
-$dbh = DBI->connect("DBI:mysql:database=mkp_products;host=mkp.cjulnvkhabig.us-east-2.rds.amazonaws.com",
-                    "mkp_reporter",
-                    "mkp_reporter_2018",
-                    {PrintError => 0});
-
-my $ohi_sth = $dbh->prepare(${\SKU_OHI_SELECT_STATEMENT}) ;
+my $ohi_sth = $mkpDBro->prepare(${\SKU_OHI_SELECT_STATEMENT}) ;
 $ohi_sth->execute($days, $days, $days, $days, $days) or die $DBI::errstr ;
 
 print "<BR><TABLE id=\"pnl\">" .
@@ -283,7 +277,7 @@ function sortTable(n) {
 </script> </BODY> </HTML>) ;
 
 $ohi_sth->finish() ;
-$dbh->disconnect() ;
+$mkpDBro->disconnect() ;
 
 sub add_neg_tag
 {

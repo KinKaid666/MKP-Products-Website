@@ -12,6 +12,7 @@ use Locale::Currency::Format ;
 use lib "/mkp/src/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
+use MKPDatabase ;
 
 use constant SKU_DETAILS_SELECT_STATEMENT => qq(
     select s.sku
@@ -175,16 +176,8 @@ print $cgi->start_html( -title => "MKP Products SKU Details",
                         -head => [$cgi->Link({-rel=>'shortcut icon',
                                               -href=>'favicon.png'})]);
 
-print $cgi->a( { -href => "/" }, "Back" ) ; 
+print $cgi->a( { -href => $ENV{HTTP_REFERER} }, "Back" ) ; 
 print $cgi->br() ;
-print $cgi->br() ;
-
-my $dbh ;
-
-$dbh = DBI->connect("DBI:mysql:database=mkp_products;host=mkp.cjulnvkhabig.us-east-2.rds.amazonaws.com",
-                    "mkp_reporter",
-                    "mkp_reporter_2018",
-                    {PrintError => 0});
 
 print "<h3>SKU</h3>\n" ;
 print "<TABLE><TR>"          .
@@ -194,7 +187,7 @@ print "<TABLE><TR>"          .
       "<TH>Vendor SKU</TH>"  .
       "<TH>Pack Size</TH>"   .
       "</TR> \n" ;
-my $sku_details_sth = $dbh->prepare(${\SKU_DETAILS_SELECT_STATEMENT}) ;
+my $sku_details_sth = $mkpDBro->prepare(${\SKU_DETAILS_SELECT_STATEMENT}) ;
 $sku_details_sth->execute($sku) or die $DBI::errstr ;
 while (my $ref = $sku_details_sth->fetchrow_hashref())
 {
@@ -216,7 +209,7 @@ print "<TABLE><TR>"           .
       "<TH>Start Date</TH>"  .
       "<TH>End Date</TH>"  .
       "</TR> \n" ;
-my $sku_cost_sth = $dbh->prepare(${\SKU_COST_DETAILS_SELECT_STATEMENT}) ;
+my $sku_cost_sth = $mkpDBro->prepare(${\SKU_COST_DETAILS_SELECT_STATEMENT}) ;
 $sku_cost_sth->execute($sku) or die $DBI::errstr ;
 while (my $ref = $sku_cost_sth->fetchrow_hashref())
 {
@@ -239,7 +232,7 @@ print "<TABLE><TR>"            .
       "<TH>Total Qty</TH>"     .
       "<TH>In-stock Est</TH>"  .
       "</TR> \n" ;
-my $inv_sth = $dbh->prepare(${\SKU_ONHAND_INVENTORY_STATEMENT}) ;
+my $inv_sth = $mkpDBro->prepare(${\SKU_ONHAND_INVENTORY_STATEMENT}) ;
 $inv_sth->execute($sku) or die $DBI::errstr ;
 while (my $ref = $inv_sth->fetchrow_hashref())
 {
@@ -273,7 +266,7 @@ print "<TABLE><TR>"            .
       "<TH>Shipped</TH>"       .
       "<TH>Received</TH>"      .
       "</TR> \n" ;
-my $inb_sth = $dbh->prepare(${\SKU_INBOUND_INVENTORY_STATEMENT}) ;
+my $inb_sth = $mkpDBro->prepare(${\SKU_INBOUND_INVENTORY_STATEMENT}) ;
 $inb_sth->execute($sku) or die $DBI::errstr ;
 while (my $ref = $inb_sth->fetchrow_hashref())
 {
@@ -291,7 +284,7 @@ while (my $ref = $inb_sth->fetchrow_hashref())
 print "</TABLE>\n" ;
 $inb_sth->finish() ;
 
-my $ohi_sth = $dbh->prepare(${\SKU_PRODUCTIVITY_SELECT_STATEMENT}) ;
+my $ohi_sth = $mkpDBro->prepare(${\SKU_PRODUCTIVITY_SELECT_STATEMENT}) ;
 $ohi_sth->execute($days, $days, $days, $days, $days, $sku) or die $DBI::errstr ;
 print "<h3>Inventory Productivity</h3>\n" ;
 print "<TABLE id=\"pnl\">"           .
@@ -349,7 +342,7 @@ print "<TABLE><TR>"                  .
       "<TH>/ unit</TH>"              .
       "<TH>%</TH>"                   .
       "</TR> \n" ;
-my $pnl_sth = $dbh->prepare(${\SKU_PNL_SELECT_STATEMENT}) ;
+my $pnl_sth = $mkpDBro->prepare(${\SKU_PNL_SELECT_STATEMENT}) ;
 $pnl_sth->execute($sku) or die $DBI::errstr ;
 while (my $ref = $pnl_sth->fetchrow_hashref())
 {
@@ -417,7 +410,7 @@ $pnl_sth->finish() ;
 #       "<TH>FBA Fees</TH>"                  .
 #       "<TH>Total</TH>"                     .
 #       "</TR> \n" ;
-# my $s_sth = $dbh->prepare(${\SKU_ORDER_DETAILS_SELECT_STATEMENT}) ;
+# my $s_sth = $mkpDBro->prepare(${\SKU_ORDER_DETAILS_SELECT_STATEMENT}) ;
 # $s_sth->execute($sku) or die $DBI::errstr ;
 # while (my $ref = $s_sth->fetchrow_hashref())
 # {
@@ -441,7 +434,7 @@ $pnl_sth->finish() ;
 #     print "<TD class=number" . &add_neg_tag($ref->{total})                       . ">" . &format_currency($ref->{total},2)                       . "</TD>" ;
 #     print "</TR>\n" ;
 # }
-$dbh->disconnect() ;
+$mkpDBro->disconnect() ;
 
 sub add_neg_tag
 {

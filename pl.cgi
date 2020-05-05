@@ -12,6 +12,7 @@ use Locale::Currency::Format ;
 use lib "/mkp/src/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
+use MKPDatabase ;
 
 use constant WEEKLY_PNL_SELECT_STATEMENT => qq(
     select sku_activity_by_week.year
@@ -131,22 +132,16 @@ print $cgi->a( { -href => "/" }, "Back" ) ;
 print $cgi->br() ;
 print $cgi->br() ;
 
-my $dbh ;
-$dbh = DBI->connect("DBI:mysql:database=mkp_products;host=mkp.cjulnvkhabig.us-east-2.rds.amazonaws.com",
-                    "mkp_reporter",
-                    "mkp_reporter_2018",
-                    {PrintError => 0});
-
 my $s_sth ;
 
 if( $option eq "WEEKLY" )
 {
 
-    $s_sth = $dbh->prepare(${\WEEKLY_PNL_SELECT_STATEMENT}) ;
+    $s_sth = $mkpDBro->prepare(${\WEEKLY_PNL_SELECT_STATEMENT}) ;
 }
 else
 {
-    $s_sth = $dbh->prepare(${\MONTHLY_PNL_SELECT_STATEMENT}) ;
+    $s_sth = $mkpDBro->prepare(${\MONTHLY_PNL_SELECT_STATEMENT}) ;
 }
 $s_sth->execute() or die $DBI::errstr ;
 print "<TABLE><TR>"           .
@@ -200,7 +195,7 @@ while (my $ref = $s_sth->fetchrow_hashref())
 }
 print "</TABLE>\n" ;
 $s_sth->finish() ;
-$dbh->disconnect() ;
+$mkpDBro->disconnect() ;
 
 # TODO: put in library
 sub add_neg_tag

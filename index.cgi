@@ -12,6 +12,7 @@ use Locale::Currency::Format ;
 use lib "/mkp/src/bin/lib" ;
 use MKPFormatter ;
 use MKPUser ;
+use MKPDatabase ;
 
 use constant TRAILING_DAY_SALES => qq(
 select a.posted_dt date
@@ -129,13 +130,9 @@ print $cgi->start_html( -title => "MKP Products Homepage",
                         -head => [$cgi->Link({-rel=>'shortcut icon',
                                               -href=>'favicon.png'})]);
 
-my $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=mkp.cjulnvkhabig.us-east-2.rds.amazonaws.com",
-                       "mkp_reporter",
-                       "mkp_reporter_2018",
-                       {PrintError => 0});
-
+#print $cgi->print( "user = '" . getlogin() . "'" ) ;
 {
-    my $latest_sth = $dbh->prepare(${\LATEST_INVENTORY}) ;
+    my $latest_sth = $mkpDBro->prepare(${\LATEST_INVENTORY}) ;
     $latest_sth->execute() or die $DBI::errstr ;
     my $row = $latest_sth->fetchrow_hashref() ;
 
@@ -143,14 +140,14 @@ my $dbh = DBI->connect("DBI:mysql:database=mkp_products;host=mkp.cjulnvkhabig.us
     print $cgi->small($cgi->i($cgi->b(" inventory: ") . &format_date($row->{latest_report}))) ;
 }
 {
-    my $latest_sth = $dbh->prepare(${\LATEST_ORDER}) ;
+    my $latest_sth = $mkpDBro->prepare(${\LATEST_ORDER}) ;
     $latest_sth->execute() or die $DBI::errstr ;
     my $row = $latest_sth->fetchrow_hashref() ;
 
     print $cgi->small($cgi->i($cgi->b(" order: ") . &format_date($row->{latest_order}))) ;
 }
 
-my $s_sth = $dbh->prepare(${\TRAILING_DAY_SALES}) ;
+my $s_sth = $mkpDBro->prepare(${\TRAILING_DAY_SALES}) ;
 my $days = 7 ;
 $s_sth->execute($days, $days, $days) or die $DBI::errstr ;
 
@@ -179,7 +176,7 @@ $s_sth->finish() ;
 my $mdays = 30 ;
 #
 # Put MTD sales
-my $mtd_sth = $dbh->prepare(${\MTD_SALES}) ;
+my $mtd_sth = $mkpDBro->prepare(${\MTD_SALES}) ;
 $mtd_sth->execute($mdays, $mdays, $mdays) or die $DBI::errstr ;
 my $mtd_row = $mtd_sth->fetchrow_hashref() ;
 print "<TR>\n" ;
@@ -202,7 +199,7 @@ print "<TABLE><TR>"              .
       "<TH>Total (units)</TH>"           .
       "<TH>Coverage (days)</TH>" .
       "</TR> \n" ;
-my $inv_sth = $dbh->prepare(${\TOTAL_INVENTORY_COST}) ;
+my $inv_sth = $mkpDBro->prepare(${\TOTAL_INVENTORY_COST}) ;
 $inv_sth->execute() or die $DBI::errstr ;
 my $inv_row = $inv_sth->fetchrow_hashref() ;
 print "<TR>\n" ;
