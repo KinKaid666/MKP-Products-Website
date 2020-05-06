@@ -289,7 +289,7 @@ $ohi_sth->execute($days, $days, $days, $days, $days, $sku) or die $DBI::errstr ;
 print "<h3>Inventory Productivity</h3>\n" ;
 print "<TABLE id=\"pnl\">"           .
       "<TBODY><TR>"                  .
-      "<TH>Ordest Order</TH>"        .
+      "<TH>Oldest Order</TH>"        .
       "<TH>SKU</TH>"                 .
       "<TH>Order Count</TH>"         .
       "<TH>Unit Count</TH>"          .
@@ -304,7 +304,7 @@ print "<TABLE id=\"pnl\">"           .
 while (my $ref = $ohi_sth->fetchrow_hashref())
 {
     print "<TR>" ;
-    print "<TD class=string>$ref->{oldest_order}</TD>" ;
+    print "<TD class=string>" . &format_date($ref->{oldest_order}) . "</TD>" ;
     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
     print "<TD class=number>" . &format_integer($ref->{order_count})                    . "</TD>" ;
     print "<TD class=number>" . &format_integer($ref->{unit_count})                     . "</TD>" ;
