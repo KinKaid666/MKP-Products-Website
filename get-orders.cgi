@@ -152,7 +152,7 @@ if( exists $req->{Orders}->{Order} )
     my $count = 1 ;
     print $cgi->br() ;
     print $cgi->a({-href => "#", -id=>"xx"}, "Download Table") ;
-    print "<BR><BR><TABLE id=\"downloadabletable\"><tr>" .
+    print "<TABLE id=\"downloadabletable\"><tr>" .
           "<th>Id</th>"                                  .
           "<th>Amazon Order Id</th>"                     .
           "<th>Purchase Date</th>"                       .
