@@ -57,9 +57,11 @@ print $cgi->a( { -href => "/" }, "Back" ) ;
 print $cgi->br() ;
 print $cgi->br() ;
 
-my $s_sth = $mwsDBro->prepare(${\FEG_SQL}) ;
+my $s_sth = $mkpDBro->prepare(${\FEG_SQL}) ;
 $s_sth->execute() or die $DBI::errstr ;
-print "<TABLE><TR>"                .
+print $cgi->a({-href => "#", -id=>"xx"}, "Download Table") ;
+
+print "<TABLE id=\"downloadabletable\"><TR>" .
       "<TH>id</TH>"                .
       "<TH>Ext Id</TH>"            .
       "<TH>Processing Status</TH>" .
@@ -91,8 +93,13 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "</TR>\n" ;
 }
 print "</TABLE>\n" ;
+print q(
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script type="text/javascript" src="mkp_js.js"></script>
+) ;
+
 $s_sth->finish() ;
-$mwsDBro->disconnect() ;
+$mkpDBro->disconnect() ;
 
 # TODO: put in library
 sub add_neg_tag

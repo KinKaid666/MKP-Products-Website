@@ -144,7 +144,8 @@ else
     $s_sth = $mkpDBro->prepare(${\MONTHLY_PNL_SELECT_STATEMENT}) ;
 }
 $s_sth->execute() or die $DBI::errstr ;
-print "<TABLE><TR>"           .
+print $cgi->a({-href => "#", -id=>"xx"}, "Download Table") ;
+print "<TABLE id=\"downloadabletable\"><TR>"           .
       "<TH>Year</TH>"         .
       "<TH>" . ($option eq 'WEEKLY' ? "Week" : "Month") . "</TH>" .
       "<TH>Orders</TH>"       .
@@ -194,6 +195,11 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "</TR>\n" ;
 }
 print "</TABLE>\n" ;
+print q(
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script type="text/javascript" src="mkp_js.js"></script>
+) ;
+
 $s_sth->finish() ;
 $mkpDBro->disconnect() ;
 

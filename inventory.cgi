@@ -45,13 +45,15 @@ print $cgi->br() ;
 
 my $s_sth = $mkpDBro->prepare(${\INVENTORY_SQL}) ;
 $s_sth->execute() or die $DBI::errstr ;
-print "<TABLE><TR>"                .
-      "<TH>SKU</TH>"               .
-      "<TH>Currenty Cost</TH>"     .
-      "<TH>In-stock Qty</TH>"      .
-      "<TH>In-stock Qty \$\$</TH>" .
-      "<TH>Total Qty</TH>"         .
-      "<TH>Total Qty \$\$</TH>"    .
+print $cgi->a({-href => "#", -id=>"xx"}, "Download Table") ;
+
+print "<TABLE id=\"downloadabletable\"><TR>" .
+      "<TH>SKU</TH>"                         .
+      "<TH>Currenty Cost</TH>"               .
+      "<TH>In-stock Qty</TH>"                .
+      "<TH>In-stock Qty \$\$</TH>"           .
+      "<TH>Total Qty</TH>"                   .
+      "<TH>Total Qty \$\$</TH>"              .
       "</TR> \n" ;
 while (my $ref = $s_sth->fetchrow_hashref())
 {
@@ -72,5 +74,11 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "</TR>\n" ;
 }
 print "</TABLE>\n" ;
+# just load jquery library before referecinng $(document)
+print q(
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script type="text/javascript" src="mkp_js.js"></script>
+) ;
+
 $s_sth->finish() ;
 $mkpDBro->disconnect() ;
