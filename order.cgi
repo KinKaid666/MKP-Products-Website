@@ -147,7 +147,7 @@ print "<TABLE><TR>"                        .
 while (my $ref = $s_sth->fetchrow_hashref())
 {
     print "<TR>" ;
-    print "<TD class=string>$ref->{posted_dt}</TD>" ;
+    print "<TD class=string>" . &format_date($ref->{posted_dt}) . "</TD>" ;
     print "<TD class=string><a href=https://sellercentral.amazon.com/hz/orders/details?_encoding=UTF8&orderId=$ref->{source_order_id}>$ref->{source_order_id}</a></TD>" ;
     print "<TD class=string><a href=sku.cgi?SKU=$ref->{sku}>$ref->{sku}</a></TD>" ;
     print "<TD class=string>$ref->{event_type}</TD>" ;
