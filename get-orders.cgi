@@ -73,7 +73,7 @@ print $cgi->start_form(
     -enctype => &CGI::URL_ENCODED,
     -onsubmit => 'return javascript:validation_function()',
 );
-print $cgi->start_table ;
+print $cgi->start_table( ) ;
 print $cgi->Tr(
             $cgi->td({ -class => "string" },
                      "Start:"),
@@ -150,24 +150,26 @@ if($start ne "" and defined $cgi->param('submit_form'))
 if( exists $req->{Orders}->{Order} )
 {
     my $count = 1 ;
-    print "<BR><BR><TABLE><TR>"                      .
-          "<TH>Id</TH>"                              .
-          "<TH>Amazon Order Id</TH>"                 .
-          "<TH>Purchase Date</TH>"                   .
-          "<TH>Latest Ship Date</TH>"                .
-          "<TH>Order Type</TH>"                      .
-          "<TH>Fulfillment Channel</TH>"             .
-          "<TH>Is Prime</TH>"                        .
-          "<TH>Order Total</TH>"                     .
-          "<TH>Order Status</TH>"                    .
-          "<TH>Last Update Date</TH>"                .
-          "<TH>Shipment Service Level Category</TH>" .
-          "</TR> \n" ;
+    print $cgi->br() ;
+    print $cgi->a({-href => "#", -id=>"xx"}, "Download Table") ;
+    print "<BR><BR><TABLE id=\"downloadabletable\"><tr>" .
+          "<th>Id</th>"                                  .
+          "<th>Amazon Order Id</th>"                     .
+          "<th>Purchase Date</th>"                       .
+          "<th>Latest Ship Date</th>"                    .
+          "<th>Order Type</th>"                          .
+          "<th>Fulfillment Channel</th>"                 .
+          "<th>Is Prime</th>"                            .
+          "<th>Order Total</th>"                         .
+          "<th>Order Status</th>"                        .
+          "<th>Last Update Date</th>"                    .
+          "<th>Shipment Service Level Category</th>"     .
+          "</tr> \n" ;
     while(1)
     {
         foreach my $order (@{$req->{Orders}->{Order}})
         {
-            print "<TR>" ;
+            print "<tr>" ;
             print &format_html_column($count++,0,"number") ;
             print &format_html_column("<a href=order.cgi?SOURCE_ORDER_ID=$order->{AmazonOrderId}>$order->{AmazonOrderId}</a>",0,"string") ;
             print &format_html_column(&format_date($order->{PurchaseDate}),0,"string") ;
@@ -179,12 +181,18 @@ if( exists $req->{Orders}->{Order} )
             print &format_html_column($order->{OrderStatus},0,"string") ;
             print &format_html_column(&format_date($order->{LastUpdateDate}),0,"string") ;
             print &format_html_column($order->{ShipmentServiceLevelCategory},0,"string") ;
-            print "</TR>" ;
+            print "</tr>" ;
         }
         last if( not defined $req->{NextToken} ) ;
         $req = $mws->ListOrdersByNextToken(NextToken => $req->{NextToken}) ;
     }
     print "</TABLE>\n" ;
 }
+
+# just load jquery library before referecinng $(document)
+print q(
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script type="text/javascript" src="mkp_js.js"></script>
+) ;
 
 print $cgi->end_html() ;
