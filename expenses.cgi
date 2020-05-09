@@ -100,12 +100,12 @@ print $cgi->br() ;
 my $expenses_sth ;
 if( defined $week )
 {
-    $expenses_sth = $mwsDBro->prepare(${\WEEKLY_EXPENSES_SELECT_STATEMENT}) ;
+    $expenses_sth = $mkpDBro->prepare(${\WEEKLY_EXPENSES_SELECT_STATEMENT}) ;
     $expenses_sth->execute("$year-$week","$year-$week") or die $DBI::errstr ;
 }
 else
 {
-    $expenses_sth = $mwsDBro->prepare(${\MONTHLY_EXPENSES_SELECT_STATEMENT}) ;
+    $expenses_sth = $mkpDBro->prepare(${\MONTHLY_EXPENSES_SELECT_STATEMENT}) ;
     $expenses_sth->execute($year,$month,$year,$month) or die $DBI::errstr ;
 }
 
