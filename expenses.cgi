@@ -144,6 +144,12 @@ print "<TD class=number" . &add_neg_tag($expenses)   . "><strong>" . &format_cur
 print "</TR>\n" ;
 print "</TABLE>\n" ;
 $expenses_sth->finish() ;
+print q(
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script type="text/javascript" src="mkp_js.js"></script>
+) ;
+
+print $cgi->end_html() ;
 
 sub add_neg_tag
 {

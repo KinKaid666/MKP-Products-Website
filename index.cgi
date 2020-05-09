@@ -290,6 +290,11 @@ print $cgi->end_table() ;
 print $cgi->submit( -name     => 'submit_form',
                     -value    => 'Submit') ;
 print $cgi->end_form() ;
+print q(
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script type="text/javascript" src="mkp_js.js"></script>
+) ;
+
 print $cgi->end_html() ;
 
 sub add_neg_tag

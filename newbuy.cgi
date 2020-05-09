@@ -146,21 +146,21 @@ print $cgi->a({-href => "#", -id=>"xx"}, "Download Table") ;
 
 print "<BR><TABLE id=\"downloadabletable\">" .
       "<TBODY><TR>"            .
-      "<TH onclick=\"sortTable(0)\" style=\"cursor:pointer\">SKU</TH>"           .
-      "<TH onclick=\"sortTable(1)\" style=\"cursor:pointer\">Title</TH>"         .
-      "<TH onclick=\"sortTable(2)\" style=\"cursor:pointer\">Vendor</TH>"        .
-      "<TH onclick=\"sortTable(3)\" style=\"cursor:pointer\">Vendor SKU</TH>"    .
-      "<TH onclick=\"sortTable(4)\" style=\"cursor:pointer\">Pack Size</TH>"     .
-      "<TH onclick=\"sortTable(5)\" style=\"cursor:pointer\">Source</TH>"        .
-      "<TH onclick=\"sortTable(6)\" style=\"cursor:pointer\">Total Qty</TH>"     .
-      "<TH onclick=\"sortTable(7)\" style=\"cursor:pointer\">Desired OH</TH>"    .
-      "<TH onclick=\"sortTable(8)\" style=\"cursor:pointer\">Desired OH\$</TH>"  .
-      "<TH onclick=\"sortTable(9)\" style=\"cursor:pointer\">To Buy</TH>"        .
-      "<TH onclick=\"sortTable(10)\" style=\"cursor:pointer\">To Buy Vendor</TH>".
-      "<TH onclick=\"sortTable(11)\" style=\"cursor:pointer\">To Buy \$</TH>"    .
-      "<TH onclick=\"sortTable(12)\" style=\"cursor:pointer\">Velocity</TH>"     .
-      "<TH onclick=\"sortTable(13)\" style=\"cursor:pointer\">WOC</TH>"          .
-      "<TH onclick=\"sortTable(14)\" style=\"cursor:pointer\">Sold</TH>"         .
+      "<TH>SKU</TH>"           .
+      "<TH>Title</TH>"         .
+      "<TH>Vendor</TH>"        .
+      "<TH>Vendor SKU</TH>"    .
+      "<TH>Pack Size</TH>"     .
+      "<TH>Source</TH>"        .
+      "<TH>Total Qty</TH>"     .
+      "<TH>Desired OH</TH>"    .
+      "<TH>Desired OH\$</TH>"  .
+      "<TH>To Buy</TH>"        .
+      "<TH>To Buy Vendor</TH>".
+      "<TH>To Buy \$</TH>"    .
+      "<TH>Velocity</TH>"     .
+      "<TH>WOC</TH>"          .
+      "<TH>Sold</TH>"         .
       "</TR>\n" ;
 while (my $ref = $ohi_sth->fetchrow_hashref())
 {

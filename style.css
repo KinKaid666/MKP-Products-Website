@@ -1,6 +1,6 @@
 table, th, tr, td {border:1px solid black; white-space:nowrap}
 
-th {position: sticky; top: 0; background-color: #f1f1f1;}
+th {cursor:pointer; position: sticky; top: 0; background-color: #f1f1f1;}
 table {
   text-align: left;
   position: relative;
