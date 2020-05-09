@@ -62,18 +62,18 @@ $s_sth->execute() or die $DBI::errstr ;
 print $cgi->a({-href => "#", -id=>"xx"}, "Download Table") ;
 
 print "<TABLE id=\"downloadabletable\"><TR>" .
-      "<TH>id</TH>"                .
-      "<TH>Ext Id</TH>"            .
-      "<TH>Processing Status</TH>" .
-      "<TH>Start Date</TH>"        .
-      "<TH>End Date</TH>"          .
-      "<TH>Total \$\$</TH>"        .
-      "<TH>Shipment \$\$</TH>"     .
-      "<TH>Shipments</TH>"         .
-      "<TH>Expense \$\$</TH>"      .
-      "<TH>Expenses</TH>"          .
-      "<TH>Details \$\$</TH>"      .
-      "<TH>Gap</TH>"               .
+      "<TH>id</TH>"                          .
+      "<TH>Ext Id</TH>"                      .
+      "<TH>Processing Status</TH>"           .
+      "<TH>Start Date</TH>"                  .
+      "<TH>End Date</TH>"                    .
+      "<TH>Total \$\$</TH>"                  .
+      "<TH>Shipment \$\$</TH>"               .
+      "<TH>Shipments</TH>"                   .
+      "<TH>Expense \$\$</TH>"                .
+      "<TH>Expenses</TH>"                    .
+      "<TH>Details \$\$</TH>"                .
+      "<TH>Gap</TH>"                         .
       "</TR> \n" ;
 while (my $ref = $s_sth->fetchrow_hashref())
 {
