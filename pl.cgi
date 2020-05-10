@@ -146,7 +146,6 @@ else
 $s_sth->execute() or die $DBI::errstr ;
 print $cgi->a({-href => "#", -id=>"xx"}, "Download Table") ;
 print "<TABLE id=\"downloadabletable\"><TR>"           .
-      "<TH>Year</TH>"         .
       "<TH>" . ($option eq 'WEEKLY' ? "Week" : "Month") . "</TH>" .
       "<TH>Orders</TH>"       .
       "<TH>Units</TH>"        .
@@ -171,8 +170,7 @@ print "<TABLE id=\"downloadabletable\"><TR>"           .
 while (my $ref = $s_sth->fetchrow_hashref())
 {
     print "<TR>\n" ;
-    print "<TD class=number>$ref->{year}</TD>\n" ;
-    print "<TD class=number>" . ($option eq "WEEKLY" ? $ref->{week} : $ref->{month}) . "</TD>\n" ;
+    print "<TD class=number>" . $ref->{year} . "-" . ($option eq "WEEKLY" ? $ref->{week} : $ref->{month}) . "</TD>\n" ;
     print "<TD class=number>" . &format_integer($ref->{order_count}) . "</TD>\n" ;
     print "<TD class=number>" . &format_integer($ref->{unit_count})  . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{product_sales}) . ">" . &format_currency($ref->{product_sales})                       . "</TD>\n" ;
