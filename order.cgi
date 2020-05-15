@@ -27,7 +27,9 @@ use constant ORDER_PNL_SELECT_STATEMENT => qq(
                  sum(other_fees                         ) +
                  sum(so.selling_fees                    ) selling_fees
            ,sum(so.fba_fees                        ) fba_fees
-           ,sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
+           ,sum(case when so.event_type = 'Refund' and so.product_charges <> 0 then sc.cost*so.quantity*1
+                     when so.event_type = 'Refund' and so.product_charges = 0 then 0
+                     else sc.cost*so.quantity*-1 end) cogs
            ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) +
                  sum(promotional_rebates                ) +
                  sum(marketplace_facilitator_tax        ) +
@@ -75,7 +77,7 @@ use constant ORDER_DETAILS_SELECT_STATEMENT => qq(
 
 my $username = &validate() ;
 my $cgi = CGI->new() ;
-my $sku = $cgi->param('SOURCE_ORDER_ID') ;
+my $order = $cgi->param('SOURCE_ORDER_ID') ;
 print $cgi->header;
 print $cgi->start_html( -title => "MKP Products Order Details",
                         -style => {'src'=>'http://prod.mkpproducts.com/style.css'},
@@ -83,11 +85,13 @@ print $cgi->start_html( -title => "MKP Products Order Details",
                                               -href=>'favicon.png'})]);
 
 print $cgi->a( { -href => "/" }, "Back" ) ; 
+print "&nbsp&nbsp" ;
+print $cgi->a( { -href => "https://sellercentral.amazon.com/orders-v3/order/$order" }, "Amazon Link: $order" ) ; 
 print $cgi->br() ;
 print $cgi->br() ;
 
 my $pnl_sth = $mkpDBro->prepare(${\ORDER_PNL_SELECT_STATEMENT}) ;
-$pnl_sth->execute($sku) or die $DBI::errstr ;
+$pnl_sth->execute($order) or die $DBI::errstr ;
 
 print "<TABLE><TR>"                  .
       "<TH>Year</TH>"                .
@@ -123,7 +127,7 @@ $pnl_sth->finish() ;
 
 print "<BR><BR>" ;
 my $s_sth = $mkpDBro->prepare(${\ORDER_DETAILS_SELECT_STATEMENT}) ;
-$s_sth->execute($sku) or die $DBI::errstr ;
+$s_sth->execute($order) or die $DBI::errstr ;
 
 print "<TABLE><TR>"                        .
       "<TH>Posted Datetime</TH>"           .

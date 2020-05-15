@@ -16,8 +16,10 @@ use MKPDatabase ;
 
 use constant TRAILING_DAY_SALES => qq(
 select a.posted_dt date
-       , sum(sales)    sales
-       , sum(fees)     fees
+       , sum(sales) sales
+       , sum(sales) over (order by a.posted_dt asc rows 6 preceding ) as '7_day'
+       , sum(sales) over (order by a.posted_dt asc rows 29 preceding ) as '30_day'
+       , sum(fees) fees
        , sum(ifnull(expenses,0)) expenses
        , sum(cogs) cogs
        , sum(sales) + sum(fees) + sum(cogs) + sum(ifnull(expenses,0)) total
@@ -25,7 +27,9 @@ select a.posted_dt date
       select date_format(posted_dt, "%Y-%m-%d") posted_dt
              , sum(product_charges + shipping_charges + giftwrap_charges + product_charges_tax + shipping_charges_tax + giftwrap_charges_tax) sales
              , sum(marketplace_facilitator_tax + promotional_rebates + selling_fees + fba_fees + other_fees) fees
-             , sum(case when fse.event_type = 'Refund' then sc.cost*fse.quantity*1 else sc.cost*fse.quantity*-1 end) cogs
+             , sum(case when fse.event_type = 'Refund' and fse.product_charges <> 0 then sc.cost*fse.quantity*1
+                     when fse.event_type = 'Refund' and fse.product_charges = 0 then 0
+                     else sc.cost*fse.quantity*-1 end) cogs
         from financial_shipment_events fse
         join sku_costs sc
           on fse.sku = sc.sku
@@ -64,7 +68,9 @@ select a.mon
       select 'A' mon
              , sum(product_charges + shipping_charges + giftwrap_charges + product_charges_tax + shipping_charges_tax + giftwrap_charges_tax) sales
              , sum(marketplace_facilitator_tax + promotional_rebates + selling_fees + fba_fees + other_fees) fees
-             , sum(case when fse.event_type = 'Refund' then sc.cost*fse.quantity*1 else sc.cost*fse.quantity*-1 end) cogs
+             , sum(case when fse.event_type = 'Refund' and fse.product_charges <> 0 then sc.cost*fse.quantity*1
+                     when fse.event_type = 'Refund' and fse.product_charges = 0 then 0
+                     else sc.cost*fse.quantity*-1 end) cogs
         from financial_shipment_events fse
         join sku_costs sc
           on fse.sku = sc.sku
@@ -119,7 +125,6 @@ my $cgi = CGI->new() ;
 my $username = &validate() ;
 my $sku   = $cgi->param('sku') || undef ;
 my $order = $cgi->param('order') || undef ;
-my $velocity = 1 ;
 
 print $cgi->redirect( -url=>"/sku.cgi?SKU=$sku")                 if( defined $sku   ) ;
 print $cgi->redirect( -url=>"/order.cgi?SOURCE_ORDER_ID=$order") if( defined $order ) ;
@@ -148,13 +153,16 @@ print $cgi->start_html( -title => "MKP Products Homepage",
 }
 
 my $s_sth = $mkpDBro->prepare(${\TRAILING_DAY_SALES}) ;
+my $lookback_days = 61 ;
 my $days = 7 ;
-$s_sth->execute($days, $days, $days) or die $DBI::errstr ;
+$s_sth->execute($lookback_days,$lookback_days,$lookback_days) or die $DBI::errstr ;
 
-print $cgi->h3("Trailing $days Days Sales Flash") ;
+print $cgi->h3("Trailing " . ($days + 1) . " Days Sales Flash") ;
 print "<TABLE><TR>"       .
       "<TH>Date</TH>"     .
       "<TH>Sales</TH>"    .
+      "<TH>Trailing 7-day Sales</TH>"  .
+      "<TH>Trailing 30-day Sales</TH>" .
       "<TH>Fees</TH>"     .
       "<TH>COGS</TH>"     .
       "<TH>Expenses</TH>" .
@@ -165,30 +173,25 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "<TR>\n" ;
     print "<TD class=string>$ref->{date} </TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{sales})    . ">" . &format_currency($ref->{sales})    . "</TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{sales})    . ">" . &format_currency($ref->{'7_day'})  . "</TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{sales})    . ">" . &format_currency($ref->{'30_day'}) . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{fees})     . ">" . &format_currency($ref->{fees})     . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{cogs})     . ">" . &format_currency($ref->{cogs})     . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{expenses}) . ">" . &format_currency($ref->{expenses}) . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{total})    . ">" . &format_currency($ref->{total})    . "</TD>\n" ;
     print "</TR>\n" ;
+    last if $days-- < 1 ;
 }
 $s_sth->finish() ;
 
-my $mdays = 30 ;
 #
 # Put MTD sales
+my $mdays = 30 ;
 my $mtd_sth = $mkpDBro->prepare(${\MTD_SALES}) ;
 $mtd_sth->execute($mdays, $mdays, $mdays) or die $DBI::errstr ;
 my $mtd_row = $mtd_sth->fetchrow_hashref() ;
-print "<TR>\n" ;
-print "<TD class=string>Trailing 30 Days</TD>\n" ;
-print "<TD class=number" . &add_neg_tag($mtd_row->{sales})    . ">" . &format_currency($mtd_row->{sales})    . "</TD>\n" ;
-print "<TD class=number" . &add_neg_tag($mtd_row->{fees})     . ">" . &format_currency($mtd_row->{fees})     . "</TD>\n" ;
-print "<TD class=number" . &add_neg_tag($mtd_row->{cogs})     . ">" . &format_currency($mtd_row->{cogs})     . "</TD>\n" ;
-print "<TD class=number" . &add_neg_tag($mtd_row->{expenses}) . ">" . &format_currency($mtd_row->{expenses}) . "</TD>\n" ;
-print "<TD class=number" . &add_neg_tag($mtd_row->{total})    . ">" . &format_currency($mtd_row->{total})    . "</TD>\n" ;
-print "</TR>\n" ;
-print "</TABLE>\n" ;
 $mtd_sth->finish() ;
+print "</TABLE>\n" ;
 
 #
 # Total Inventory

@@ -35,7 +35,9 @@ use constant WEEKLY_PNL_SELECT_STATEMENT => qq(
                     ,sum(so.other_fees                      ) other_fees
                     ,sum(so.selling_fees                    ) selling_fees
                     ,sum(so.fba_fees                        ) fba_fees
-                    ,sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
+                    ,sum(case when so.event_type = 'Refund' and so.product_charges <> 0 then sc.cost*so.quantity*1
+                              when so.event_type = 'Refund' and so.product_charges = 0 then 0
+                              else sc.cost*so.quantity*-1 end) cogs
                from financial_shipment_events so
                join sku_costs sc
                  on so.sku = sc.sku
@@ -87,7 +89,9 @@ use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
                     ,sum(so.other_fees                      ) other_fees
                     ,sum(so.selling_fees                    ) selling_fees
                     ,sum(so.fba_fees                        ) fba_fees
-                    ,sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
+                    ,sum(case when so.event_type = 'Refund' and so.product_charges <> 0 then sc.cost*so.quantity*1
+                              when so.event_type = 'Refund' and so.product_charges = 0 then 0
+                              else sc.cost*so.quantity*-1 end) cogs
                from financial_shipment_events so
                join sku_costs sc
                  on so.sku = sc.sku

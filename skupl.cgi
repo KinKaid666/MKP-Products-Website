@@ -59,7 +59,9 @@ use constant SKU_PNL_SELECT_STATEMENT => qq(
                             sum(other_fees                         ) +
                             sum(so.selling_fees                    ) selling_fees
                        ,sum(so.fba_fees                        ) fba_fees
-                       ,sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
+                       ,sum(case when so.event_type = 'Refund' and so.product_charges <> 0 then sc.cost*so.quantity*1
+                                 when so.event_type = 'Refund' and so.product_charges = 0 then 0
+                                 else sc.cost*so.quantity*-1 end) cogs
                        ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) +
                              sum(promotional_rebates                ) +
                              sum(marketplace_facilitator_tax        ) +
@@ -108,7 +110,9 @@ use constant SKU_PNL_SELECT_STATEMENT => qq(
                             sum(other_fees                         ) +
                             sum(so.selling_fees                    ) selling_fees
                        ,sum(so.fba_fees                        ) fba_fees
-                       ,sum(case when so.event_type = 'Refund' then sc.cost*so.quantity*1 else sc.cost*so.quantity*-1 end) cogs
+                       ,sum(case when so.event_type = 'Refund' and so.product_charges <> 0 then sc.cost*so.quantity*1
+                                 when so.event_type = 'Refund' and so.product_charges = 0 then 0
+                                 else sc.cost*so.quantity*-1 end) cogs
                        ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) +
                              sum(promotional_rebates                ) +
                              sum(marketplace_facilitator_tax        ) +
