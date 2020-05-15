@@ -181,6 +181,8 @@ print $cgi->start_html( -title => "MKP Products SKU Details",
                                               -href=>'favicon.png'})]);
 
 print $cgi->a( { -href => $ENV{HTTP_REFERER} }, "Back" ) ; 
+print "&nbsp&nbsp" ;
+print $cgi->a( { -href => "https://sellercentral.amazon.com/skucentral?mSku=$sku" }, "Amazon Link: $sku" ) ;
 print $cgi->br() ;
 
 print "<h3>SKU</h3>\n" ;
