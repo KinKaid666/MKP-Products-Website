@@ -120,6 +120,17 @@ use constant LATEST_INVENTORY => qq(
     select max(latest_update) latest_report from realtime_inventory
 ) ;
 
+use constant FIND_UNKNOWN_ACTIVE_SKUS => qq(
+    select s.sku, s.vendor_name, s.title, s.description, coalesce(sc.cost,'N/A') cost
+      from skus s
+      left join active_sources a
+        on a.sku = s.sku
+      left join sku_costs sc
+        on sc.sku = s.sku
+     where a.active = 1
+       and (s.vendor_name = 'Unknown' or sc.cost is null)
+) ;
+
 my $cgi = CGI->new() ;
 
 my $username = &validate() ;
@@ -234,6 +245,28 @@ print "</TR>\n" ;
 print "</TABLE>\n" ;
 $inv_sth->finish() ;
 
+#
+# Unknown SKUs
+my $unk_sth = $mkpDBro->prepare(${\FIND_UNKNOWN_ACTIVE_SKUS}) ;
+$unk_sth->execute() or die $DBI::errstr ;
+if( $unk_sth->rows > 0 )
+{
+    print $cgi->h3("Found Active Problem SKUs") ;
+    print "<TABLE><TR>"     .
+          "<TH>SKU</TH>"    .
+          "<TH>Vendor</TH>" .
+          "<TH>Cost</TH>"   .
+          "</TR> \n" ;
+    while (my $ref = $unk_sth->fetchrow_hashref())
+    {
+        print "<TR>" ;
+        print &format_html_column($cgi->a({href => "/sku.cgi?SKU=$ref->{sku}"}, $ref->{sku} ),0,"string") ;
+        print &format_html_column($ref->{vendor_name},0,"string") ;
+        print &format_html_column(&format_currency($ref->{cost},2),0,"number") ;
+        print "</TR>" ;
+    }
+    print "</TABLE>" ;
+}
 
 print $cgi->br() ;
 print $cgi->a({href => "/get-orders.cgi"}, "Get Amazon Orders" ) ;
