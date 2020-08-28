@@ -60,8 +60,8 @@ use constant SKU_OHI_SELECT_STATEMENT => qq(
 
 my $username = &validate() ;
 my $cgi = CGI->new() ;
-my $days = $cgi->param('days') || 90 ;
-my $woc = $cgi->param('woc') || 6 ;
+my $days = $cgi->param('days') || 180 ;
+my $woc = $cgi->param('woc') || 13 ;
 my $lvt = $cgi->param('lvt') || ${\LOW_SKU_VELOCITY_THRESHOLD}   ;
 my $buy_amount = $cgi->param('buy_amount') || 2500 ;
 my $show_only_active = 'on' ;

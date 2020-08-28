@@ -50,21 +50,19 @@ use constant SKU_PNL_SELECT_STATEMENT => qq(
                        ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) unit_count
                        ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
                                ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/ 7) weekly_velocity
-                       ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
+                       ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax + marketplace_facilitator_tax) product_sales
                        ,ifnull(ri.quantity_total, 0) /
                                (sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
                                ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/7)) woc
                        ,sum(promotional_rebates                ) +
-                            sum(marketplace_facilitator_tax        ) +
                             sum(other_fees                         ) +
                             sum(so.selling_fees                    ) selling_fees
                        ,sum(so.fba_fees                        ) fba_fees
                        ,sum(case when so.event_type = 'Refund' and so.product_charges <> 0 then sc.cost*so.quantity*1
                                  when so.event_type = 'Refund' and so.product_charges = 0 then 0
                                  else sc.cost*so.quantity*-1 end) cogs
-                       ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) +
+                       ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax + marketplace_facilitator_tax) +
                              sum(promotional_rebates                ) +
-                             sum(marketplace_facilitator_tax        ) +
                              sum(other_fees                         ) +
                              sum(so.selling_fees                    ) +
                              sum(so.fba_fees                        ) +
@@ -101,21 +99,19 @@ use constant SKU_PNL_SELECT_STATEMENT => qq(
                        ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) unit_count
                        ,sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
                                ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/ 7) weekly_velocity
-                       ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
+                       ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax + marketplace_facilitator_tax) product_sales
                        ,ifnull(ri.quantity_total, 0) /
                                (sum(case when so.event_type = 'Refund' then -1 * CAST(so.quantity as SIGNED) else 1 * CAST(so.quantity as SIGNED) end) /
                                ((case when datediff(NOW(),min(posted_dt)) > ? then ? else datediff(NOW(),min(posted_dt)) end)/7)) woc
                        ,sum(promotional_rebates                ) +
-                            sum(marketplace_facilitator_tax        ) +
                             sum(other_fees                         ) +
                             sum(so.selling_fees                    ) selling_fees
                        ,sum(so.fba_fees                        ) fba_fees
                        ,sum(case when so.event_type = 'Refund' and so.product_charges <> 0 then sc.cost*so.quantity*1
                                  when so.event_type = 'Refund' and so.product_charges = 0 then 0
                                  else sc.cost*so.quantity*-1 end) cogs
-                       ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) +
+                       ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax + marketplace_facilitator_tax) +
                              sum(promotional_rebates                ) +
-                             sum(marketplace_facilitator_tax        ) +
                              sum(other_fees                         ) +
                              sum(so.selling_fees                    ) +
                              sum(so.fba_fees                        ) +

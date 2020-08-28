@@ -20,18 +20,17 @@ use constant WEEKLY_PNL_SELECT_STATEMENT => qq(
            , order_count
            , unit_count
            , product_sales
-           , (promotional_rebates + marketplace_facilitator_tax + other_fees + selling_fees) selling_fees
+           , (promotional_rebates + other_fees + selling_fees) selling_fees
            , fba_fees
            , cogs
            , ifnull(sga_by_week.expenses,0) + ifnull(expenses_by_week.expenses,0) expenses
-           , (product_sales + promotional_rebates + marketplace_facilitator_tax + other_fees + selling_fees + fba_fees + cogs + ifnull(expenses_by_week.expenses,0) + ifnull(sga_by_week.expenses,0) ) net_income
+           , (product_sales + promotional_rebates + other_fees + selling_fees + fba_fees + cogs + ifnull(expenses_by_week.expenses,0) + ifnull(sga_by_week.expenses,0) ) net_income
       from ( select date_format(so.posted_dt,"%X") year
                     ,date_format(so.posted_dt, "%V") week
                     ,count(distinct so.source_order_id      ) order_count
                     ,sum(so.quantity                        ) unit_count
-                    ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
+                    ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax + so.marketplace_facilitator_tax) product_sales
                     ,sum(so.promotional_rebates             ) promotional_rebates
-                    ,sum(so.marketplace_facilitator_tax     ) marketplace_facilitator_tax
                     ,sum(so.other_fees                      ) other_fees
                     ,sum(so.selling_fees                    ) selling_fees
                     ,sum(so.fba_fees                        ) fba_fees
@@ -65,7 +64,7 @@ use constant WEEKLY_PNL_SELECT_STATEMENT => qq(
            ) sga_by_week
         on sku_activity_by_week.year = sga_by_week.year
        and sku_activity_by_week.week = sga_by_week.week
-     order by year, week
+     order by year desc, week desc
 ) ;
 
 use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
@@ -74,18 +73,17 @@ use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
            , order_count
            , unit_count
            , product_sales
-           , (promotional_rebates + marketplace_facilitator_tax + other_fees + selling_fees) selling_fees
+           , (promotional_rebates + other_fees + selling_fees) selling_fees
            , fba_fees
            , cogs 
            , ifnull(sga_by_month.expenses,0) + ifnull(expenses_by_month.expenses,0) expenses
-           , (product_sales + promotional_rebates + marketplace_facilitator_tax + other_fees + selling_fees + fba_fees + cogs + ifnull(expenses_by_month.expenses,0) + ifnull(sga_by_month.expenses,0) ) net_income
+           , (product_sales + promotional_rebates + other_fees + selling_fees + fba_fees + cogs + ifnull(expenses_by_month.expenses,0) + ifnull(sga_by_month.expenses,0) ) net_income
       from ( select date_format(so.posted_dt,"%Y") year
                     ,date_format(so.posted_dt, "%m") month
                     ,count(distinct so.source_order_id      ) order_count
                     ,sum(so.quantity                        ) unit_count
-                    ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
+                    ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax + so.marketplace_facilitator_tax) product_sales
                     ,sum(promotional_rebates                ) promotional_rebates
-                    ,sum(marketplace_facilitator_tax        ) marketplace_facilitator_tax
                     ,sum(so.other_fees                      ) other_fees
                     ,sum(so.selling_fees                    ) selling_fees
                     ,sum(so.fba_fees                        ) fba_fees
@@ -119,7 +117,7 @@ use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
            ) sga_by_month
         on sku_activity_by_month.year = sga_by_month.year
        and sku_activity_by_month.month = sga_by_month.month
-     order by year, month
+     order by year desc, month desc
 ) ;
 
 my $username = &validate() ;

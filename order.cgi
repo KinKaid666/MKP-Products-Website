@@ -21,18 +21,16 @@ use constant ORDER_PNL_SELECT_STATEMENT => qq(
            ,so.sku
            ,count(distinct so.source_order_id      ) order_count
            ,sum(so.quantity                        ) unit_count
-           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) product_sales
+           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax + marketplace_facilitator_tax) product_sales
            , sum(promotional_rebates                ) +
-                 sum(marketplace_facilitator_tax        ) +
                  sum(other_fees                         ) +
                  sum(so.selling_fees                    ) selling_fees
            ,sum(so.fba_fees                        ) fba_fees
            ,sum(case when so.event_type = 'Refund' and so.product_charges <> 0 then sc.cost*so.quantity*1
                      when so.event_type = 'Refund' and so.product_charges = 0 then 0
                      else sc.cost*so.quantity*-1 end) cogs
-           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax) +
+           ,sum(so.product_charges + product_charges_tax + shipping_charges + shipping_charges_tax + giftwrap_charges + giftwrap_charges_tax + marketplace_facilitator_tax) +
                  sum(promotional_rebates                ) +
-                 sum(marketplace_facilitator_tax        ) +
                  sum(other_fees                         ) +
                  sum(so.selling_fees                    ) +
                  sum(so.fba_fees                        ) +
