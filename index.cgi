@@ -24,9 +24,9 @@ select a.posted_dt date
        , sum(cogs) cogs
        , sum(sales) + sum(fees) + sum(cogs) + sum(ifnull(expenses,0)) total
   from (
-      select date_format(posted_dt, "%Y-%m-%d") posted_dt
-             , sum(product_charges + shipping_charges + giftwrap_charges + product_charges_tax + shipping_charges_tax + giftwrap_charges_tax) sales
-             , sum(marketplace_facilitator_tax + promotional_rebates + selling_fees + fba_fees + other_fees) fees
+      select date_format(posted_dt, "%Y-%m-%d (%a)") posted_dt
+             , sum(product_charges + shipping_charges + giftwrap_charges + product_charges_tax + shipping_charges_tax + giftwrap_charges_tax + marketplace_facilitator_tax) sales
+             , sum(promotional_rebates + selling_fees + fba_fees + other_fees) fees
              , sum(case when fse.event_type = 'Refund' and fse.product_charges <> 0 then sc.cost*fse.quantity*1
                      when fse.event_type = 'Refund' and fse.product_charges = 0 then 0
                      else sc.cost*fse.quantity*-1 end) cogs
@@ -37,20 +37,20 @@ select a.posted_dt date
          and (sc.end_date is null or
               sc.end_date > fse.posted_dt)
        where posted_dt >= DATE(NOW() - INTERVAL ? DAY)
-       group by date_format(posted_dt, "%Y-%m-%d")
+       group by date_format(posted_dt, "%Y-%m-%d (%a)")
 ) a left outer join (
     select posted_dt, sum(expenses) expenses from (
-      select date_format(expense_dt, "%Y-%m-%d") posted_dt
+      select date_format(expense_dt, "%Y-%m-%d (%a)") posted_dt
              , sum(total) expenses
         from financial_expense_events fse
        where expense_dt >= DATE(NOW() - INTERVAL ? DAY)
-       group by date_format(expense_dt, "%Y-%m-%d")
+       group by date_format(expense_dt, "%Y-%m-%d (%a)")
        union all
-      select date_format(expense_datetime, "%Y-%m-%d") posted_dt
+      select date_format(expense_datetime, "%Y-%m-%d (%a)") posted_dt
              , sum(total) expenses
         from expenses fse
        where expense_datetime >= DATE(NOW() - INTERVAL ? DAY)
-       group by date_format(expense_datetime, "%Y-%m-%d")
+       group by date_format(expense_datetime, "%Y-%m-%d (%a)")
     ) c group by posted_dt
 ) b on a.posted_dt = b.posted_dt
 group by a.posted_dt
@@ -66,8 +66,8 @@ select a.mon
        , sum(sales) + sum(fees) + sum(cogs) + sum(ifnull(expenses,0)) total
   from (
       select 'A' mon
-             , sum(product_charges + shipping_charges + giftwrap_charges + product_charges_tax + shipping_charges_tax + giftwrap_charges_tax) sales
-             , sum(marketplace_facilitator_tax + promotional_rebates + selling_fees + fba_fees + other_fees) fees
+             , sum(product_charges + shipping_charges + giftwrap_charges + product_charges_tax + shipping_charges_tax + giftwrap_charges_tax + marketplace_facilitator_tax) sales
+             , sum(promotional_rebates + selling_fees + fba_fees + other_fees) fees
              , sum(case when fse.event_type = 'Refund' and fse.product_charges <> 0 then sc.cost*fse.quantity*1
                      when fse.event_type = 'Refund' and fse.product_charges = 0 then 0
                      else sc.cost*fse.quantity*-1 end) cogs
@@ -262,7 +262,7 @@ if( $unk_sth->rows > 0 )
         print "<TR>" ;
         print &format_html_column($cgi->a({href => "/sku.cgi?SKU=$ref->{sku}"}, $ref->{sku} ),0,"string") ;
         print &format_html_column($ref->{vendor_name},0,"string") ;
-        print &format_html_column(&format_currency($ref->{cost},2),0,"number") ;
+        print &format_html_column(($ref->{cost} ne "N/A" ? &format_currency($ref->{cost},2) : "--"),0,"number") ;
         print "</TR>" ;
     }
     print "</TABLE>" ;
