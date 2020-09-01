@@ -57,6 +57,15 @@ group by a.posted_dt
 order by a.posted_dt desc
 ) ;
 
+use constant RECORD_SALES_DAYS => qq(
+select row_number() over (order by sales desc) id, date_format(posted_dt, "%Y-%m-%d (%a)") posted_dt
+       , sum(product_charges + shipping_charges + giftwrap_charges + product_charges_tax + shipping_charges_tax + giftwrap_charges_tax) sales
+  from financial_shipment_events fse
+ group by date_format(posted_dt, "%Y-%m-%d (%a)")
+ order by 3 desc
+limit ? ;
+) ;
+
 use constant MTD_SALES => qq(
 select a.mon
        , sum(sales)    sales
@@ -163,6 +172,16 @@ print $cgi->start_html( -title => "MKP Products Homepage",
     print $cgi->small($cgi->i($cgi->b(" order: ") . &format_date($row->{latest_order}))) ;
 }
 
+my $r_sth = $mkpDBro->prepare(${\RECORD_SALES_DAYS}) ;
+my $record_days = 25 ;
+my $record_days_hash ;
+$r_sth->execute($record_days) or die $DBI::errstr ;
+while(my $ref = $r_sth->fetchrow_hashref())
+{
+    $record_days_hash->{$ref->{posted_dt}} = $ref->{id} ;
+}
+$r_sth->finish() ;
+
 my $s_sth = $mkpDBro->prepare(${\TRAILING_DAY_SALES}) ;
 my $lookback_days = 61 ;
 my $days = 7 ;
@@ -179,10 +198,11 @@ print "<TABLE><TR>"       .
       "<TH>Expenses</TH>" .
       "<TH>Total</TH>"    .
       "</TR> \n" ;
+
 while (my $ref = $s_sth->fetchrow_hashref())
 {
     print "<TR>\n" ;
-    print "<TD class=string>$ref->{date} </TD>\n" ;
+    print "<TD class=string>$ref->{date}" . (exists $record_days_hash->{$ref->{date}} ? $cgi->small($cgi->sup($record_days_hash->{$ref->{date}})) : " ") . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{sales})    . ">" . &format_currency($ref->{sales})    . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{sales})    . ">" . &format_currency($ref->{'7_day'})  . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{sales})    . ">" . &format_currency($ref->{'30_day'}) . "</TD>\n" ;
@@ -203,6 +223,7 @@ $mtd_sth->execute($mdays, $mdays, $mdays) or die $DBI::errstr ;
 my $mtd_row = $mtd_sth->fetchrow_hashref() ;
 $mtd_sth->finish() ;
 print "</TABLE>\n" ;
+print $cgi->small($cgi->sup("i") . $cgi->i("Top sales day.")) ;
 
 #
 # Total Inventory
