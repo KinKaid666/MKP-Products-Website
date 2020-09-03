@@ -173,7 +173,7 @@ print $cgi->start_html( -title => "MKP Products Homepage",
 }
 
 my $r_sth = $mkpDBro->prepare(${\RECORD_SALES_DAYS}) ;
-my $record_days = 25 ;
+my $record_days = 99 ;
 my $record_days_hash ;
 $r_sth->execute($record_days) or die $DBI::errstr ;
 while(my $ref = $r_sth->fetchrow_hashref())
