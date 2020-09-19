@@ -67,6 +67,15 @@ use constant WEEKLY_PNL_SELECT_STATEMENT => qq(
      order by year desc, week desc
 ) ;
 
+use constant RECORD_WEEKLY_SALES => qq(
+select row_number() over (order by sales desc) id, date_format(posted_dt, "%X-%V") period
+       , sum(product_charges + shipping_charges + giftwrap_charges + product_charges_tax + shipping_charges_tax + giftwrap_charges_tax + marketplace_facilitator_tax) sales
+  from financial_shipment_events fse
+ group by date_format(posted_dt, "%X-%V")
+ order by 3 desc
+limit ? ;
+) ;
+
 use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
     select sku_activity_by_month.year
            ,sku_activity_by_month.month
@@ -75,7 +84,7 @@ use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
            , product_sales
            , (promotional_rebates + other_fees + selling_fees) selling_fees
            , fba_fees
-           , cogs 
+           , cogs
            , ifnull(sga_by_month.expenses,0) + ifnull(expenses_by_month.expenses,0) expenses
            , (product_sales + promotional_rebates + other_fees + selling_fees + fba_fees + cogs + ifnull(expenses_by_month.expenses,0) + ifnull(sga_by_month.expenses,0) ) net_income
       from ( select date_format(so.posted_dt,"%Y") year
@@ -120,6 +129,15 @@ use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
      order by year desc, month desc
 ) ;
 
+use constant RECORD_MONTHLY_SALES => qq(
+select row_number() over (order by sales desc) id, date_format(posted_dt, "%X-%m") period
+       , sum(product_charges + shipping_charges + giftwrap_charges + product_charges_tax + shipping_charges_tax + giftwrap_charges_tax + marketplace_facilitator_tax) sales
+  from financial_shipment_events fse
+ group by date_format(posted_dt, "%X-%m")
+ order by 3 desc
+limit ? ;
+) ;
+
 my $username = &validate() ;
 my $cgi = CGI->new() ;
 my $option = $cgi->param('granularity') || "MONTHLY" ;
@@ -135,17 +153,29 @@ print $cgi->br() ;
 print $cgi->br() ;
 
 my $s_sth ;
+my $rs_sth ;
+
+my $record_periods = 10 ;
 
 if( $option eq "WEEKLY" )
 {
 
     $s_sth = $mkpDBro->prepare(${\WEEKLY_PNL_SELECT_STATEMENT}) ;
+    $rs_sth = $mkpDBro->prepare(${\RECORD_WEEKLY_SALES}) ;
 }
 else
 {
     $s_sth = $mkpDBro->prepare(${\MONTHLY_PNL_SELECT_STATEMENT}) ;
+    $rs_sth = $mkpDBro->prepare(${\RECORD_MONTHLY_SALES}) ;
 }
 $s_sth->execute() or die $DBI::errstr ;
+$rs_sth->execute($record_periods) or die $DBI::errstr ;
+
+my $record_hash ;
+while(my $ref = $rs_sth->fetchrow_hashref())
+{
+    $record_hash->{$ref->{period}} = $ref->{id} ;
+}
 print $cgi->a({-href => "#", -id=>"xx"}, "Download Table") ;
 print "<TABLE id=\"downloadabletable\"><TR>"           .
       "<TH>" . ($option eq 'WEEKLY' ? "Week" : "Month") . "</TH>" .
@@ -172,7 +202,8 @@ print "<TABLE id=\"downloadabletable\"><TR>"           .
 while (my $ref = $s_sth->fetchrow_hashref())
 {
     print "<TR>\n" ;
-    print "<TD class=number>" . $ref->{year} . "-" . ($option eq "WEEKLY" ? $ref->{week} : $ref->{month}) . "</TD>\n" ;
+    my $period = $ref->{year} . "-" . ($option eq "WEEKLY" ? $ref->{week} : $ref->{month}) ;
+    print "<TD class=string>" . $period . (exists $record_hash->{$period} ? $cgi->small($cgi->sup($record_hash->{$period})) : " ") . "</TD>\n" ;
     print "<TD class=number>" . &format_integer($ref->{order_count}) . "</TD>\n" ;
     print "<TD class=number>" . &format_integer($ref->{unit_count})  . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{product_sales}) . ">" . &format_currency($ref->{product_sales})                       . "</TD>\n" ;
@@ -195,12 +226,14 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "</TR>\n" ;
 }
 print "</TABLE>\n" ;
+print $cgi->small($cgi->sup("i") . $cgi->i("Top sales periods.")) ;
 print q(
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 <script type="text/javascript" src="mkp_js.js"></script>
 ) ;
 
 $s_sth->finish() ;
+$rs_sth->finish() ;
 $mkpDBro->disconnect() ;
 
 # TODO: put in library
