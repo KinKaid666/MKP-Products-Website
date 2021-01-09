@@ -2,7 +2,6 @@ $(document).ready(function () {
 
         function exportTableToCSV($table, filename) {
 
-        console.log("here") ;
         var $rows = $table.find('tr:has(td),tr:has(th)'),
 
             // Temporary delimiter characters unlikely to be typed by keyboard
@@ -19,7 +18,15 @@ $(document).ready(function () {
                 var $row = $(row), $cols = $row.find('td,th');
 
                 return $cols.map(function (j, col) {
-                    var $col = $(col), text = $col.text();
+                    //var $col = $(col), text = $col.text();
+                    var $col = $(col), html = $col.html(), text = $col.text() ;
+
+                    // if the cell has any super- or sub- script remove it
+                    // because it's purely a visual helper
+                    if(html.match('(sub|sup)') != null)
+                    {
+                        text = html.replace(/<.*(sub|sup).*\/(sub|sup).*>/g,'') ;
+                    }
 
                     return text.replace(/"/g, '""'); // escape double quotes
 
@@ -34,11 +41,9 @@ $(document).ready(function () {
             // Data URI
             csvData = 'data:application/csv;charset=utf-8,' + encodeURIComponent(csv);
 
-            console.log(csv);
-
                 if (window.navigator.msSaveBlob) { // IE 10+
                         //alert('IE' + csv);
-                        window.navigator.msSaveOrOpenBlob(new Blob([csv], {type: "text/plain;charset=utf-8;"}), "csvname.csv")
+                        window.navigator.msSaveOrOpenBlob(new Blob([csv], {type: "text/plain;charset=utf-8;"}), filename)
                 }
                 else {
                         $(this).attr({ 'download': filename, 'href': csvData, 'target': '_blank' });

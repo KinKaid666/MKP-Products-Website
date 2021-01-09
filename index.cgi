@@ -59,7 +59,7 @@ order by a.posted_dt desc
 
 use constant RECORD_SALES_DAYS => qq(
 select row_number() over (order by sales desc) id, date_format(posted_dt, "%Y-%m-%d (%a)") posted_dt
-       , sum(product_charges + shipping_charges + giftwrap_charges + product_charges_tax + shipping_charges_tax + giftwrap_charges_tax) sales
+       , sum(product_charges + shipping_charges + giftwrap_charges + product_charges_tax + shipping_charges_tax + giftwrap_charges_tax + marketplace_facilitator_tax) sales
   from financial_shipment_events fse
  group by date_format(posted_dt, "%Y-%m-%d (%a)")
  order by 3 desc
@@ -136,8 +136,13 @@ use constant FIND_UNKNOWN_ACTIVE_SKUS => qq(
         on a.sku = s.sku
       left join sku_costs sc
         on sc.sku = s.sku
-     where a.active = 1
-       and (s.vendor_name = 'Unknown' or sc.cost is null)
+     where (a.active = 1
+       and (s.vendor_name = 'Unknown' or sc.cost is null))
+       or (a.active is null and sc.cost is null)
+   union
+   select distinct sku, 'Unknown' vendor_name,'Unknown' title, 'Unknown' description, 'N/A' cost
+     from financial_shipment_events so
+    where not exists (select 1 from sku_costs sc where sc.sku = so.sku)
 ) ;
 
 my $cgi = CGI->new() ;
@@ -204,8 +209,8 @@ while (my $ref = $s_sth->fetchrow_hashref())
     print "<TR>\n" ;
     print "<TD class=string>$ref->{date}" . (exists $record_days_hash->{$ref->{date}} ? $cgi->small($cgi->sup($record_days_hash->{$ref->{date}})) : " ") . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{sales})    . ">" . &format_currency($ref->{sales})    . "</TD>\n" ;
-    print "<TD class=number" . &add_neg_tag($ref->{sales})    . ">" . &format_currency($ref->{'7_day'})  . "</TD>\n" ;
-    print "<TD class=number" . &add_neg_tag($ref->{sales})    . ">" . &format_currency($ref->{'30_day'}) . "</TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{'7_day'})  . ">" . &format_currency($ref->{'7_day'})  . "</TD>\n" ;
+    print "<TD class=number" . &add_neg_tag($ref->{'30_day'}) . ">" . &format_currency($ref->{'30_day'}) . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{fees})     . ">" . &format_currency($ref->{fees})     . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{cogs})     . ">" . &format_currency($ref->{cogs})     . "</TD>\n" ;
     print "<TD class=number" . &add_neg_tag($ref->{expenses}) . ">" . &format_currency($ref->{expenses}) . "</TD>\n" ;
