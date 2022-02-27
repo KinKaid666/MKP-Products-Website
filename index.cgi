@@ -108,6 +108,15 @@ select a.mon
 group by a.mon
 ) ;
 
+use constant APOLLO_SALES => qq(
+select sum(product_charges + shipping_charges + giftwrap_charges + product_charges_tax + shipping_charges_tax + giftwrap_charges_tax + marketplace_facilitator_tax) sales,
+       sum(quantity) quantity
+  from financial_shipment_events fse
+  join skus s
+    on s.sku = fse.sku
+ where s.vendor_name = 'Apollo Brush'
+) ;
+
 use constant TOTAL_INVENTORY_COST => qq(
     select sum(ri.quantity_instock * sc.cost) instock_cost
            ,sum(ri.quantity_total * sc.cost) total_cost
@@ -229,6 +238,23 @@ my $mtd_row = $mtd_sth->fetchrow_hashref() ;
 $mtd_sth->finish() ;
 print "</TABLE>\n" ;
 print $cgi->small($cgi->sup("i") . $cgi->i("Top sales day.")) ;
+
+#
+# Total Apollo
+print $cgi->h3("Apollo Sales (Lifetime)") ;
+print "<TABLE><TR>"              .
+      "<TH>Total (\$\$)</TH>"           .
+      "<TH>Total (units)</TH>"           .
+      "</TR> \n" ;
+my $apollo_sth = $mkpDBro->prepare(${\APOLLO_SALES}) ;
+$apollo_sth->execute() or die $DBI::errstr ;
+my $apollo_row = $apollo_sth->fetchrow_hashref() ;
+print "<TR>\n" ;
+print "<TD class=number>" . &format_currency($apollo_row->{sales},0) . "</TD>\n" ;
+print "<TD class=number>" . &format_decimal($apollo_row->{quantity},0) . "</TD>\n" ;
+print "</TR>\n" ;
+print "</TABLE>\n" ;
+$apollo_sth->finish() ;
 
 #
 # Total Inventory
