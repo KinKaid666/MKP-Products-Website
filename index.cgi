@@ -237,7 +237,7 @@ $mtd_sth->execute($mdays, $mdays, $mdays) or die $DBI::errstr ;
 my $mtd_row = $mtd_sth->fetchrow_hashref() ;
 $mtd_sth->finish() ;
 print "</TABLE>\n" ;
-print $cgi->small($cgi->sup("i") . $cgi->i("Top sales day.")) ;
+print $cgi->small($cgi->sup("i") . $cgi->a( { -href => "/top-sales.cgi" }, $cgi->i("Top sales day."))) ;
 
 #
 # Total Apollo
@@ -261,8 +261,8 @@ $apollo_sth->finish() ;
 print $cgi->h3("Inventory") ;
 print "<TABLE><TR>"              .
       "<TH>Type</TH>"            .
-      "<TH>Total (\$\$)</TH>"           .
-      "<TH>Total (units)</TH>"           .
+      "<TH>Total (\$\$)</TH>"    .
+      "<TH>Total (units)</TH>"   .
       "<TH>Coverage (days)</TH>" .
       "</TR> \n" ;
 my $inv_sth = $mkpDBro->prepare(${\TOTAL_INVENTORY_COST}) ;
