@@ -29,9 +29,9 @@ use constant INBOUND_SHIPMENT_ITEMS_SQL => qq(
          on isi.inbound_shipment_id = ib.id
        join sku_costs sc
          on isi.sku = sc.sku
-        and sc.start_date < NOW()
+        and sc.start_date <= curdate()
         and (sc.end_date is null or
-             sc.end_date > NOW())
+             sc.end_date >= curdate())
       where ib.ext_shipment_id = ?
     group by ib.id
            , ib.condition_name

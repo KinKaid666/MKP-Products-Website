@@ -38,9 +38,9 @@ use constant ORDER_PNL_SELECT_STATEMENT => qq(
       from financial_shipment_events so
       join sku_costs sc
         on so.sku = sc.sku
-       and sc.start_date < so.posted_dt
+       and sc.start_date <= date(so.posted_dt)
        and (sc.end_date is null or
-            sc.end_date > so.posted_dt)
+            sc.end_date >= date(so.posted_dt))
      where so.source_order_id = ?
     group by date_format(so.posted_dt,"%Y")
              ,date_format(so.posted_dt,"%m")

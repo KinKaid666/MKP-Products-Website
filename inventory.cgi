@@ -24,8 +24,8 @@ use constant INVENTORY_SQL => qq(
       from realtime_inventory ri
       left outer join sku_costs sc
         on ri.sku = sc.sku
-       and sc.start_date < now()
-       and (sc.end_date is null or sc.end_date > now())
+       and sc.start_date <= curdate()
+       and (sc.end_date is null or sc.end_date >= curdate())
      where ri.quantity_total > 0
      order by 5 desc
 ) ;

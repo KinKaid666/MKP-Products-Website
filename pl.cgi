@@ -40,9 +40,9 @@ use constant WEEKLY_PNL_SELECT_STATEMENT => qq(
                from financial_shipment_events so
                join sku_costs sc
                  on so.sku = sc.sku
-                and sc.start_date < so.posted_dt
+                and sc.start_date <= date(so.posted_dt)
                 and (sc.end_date is null or
-                     sc.end_date >= so.posted_dt)
+                     sc.end_date >= date(so.posted_dt))
              group by date_format(so.posted_dt,"%X")
                       ,date_format(so.posted_dt,"%V")
       ) as sku_activity_by_week
@@ -102,9 +102,9 @@ use constant MONTHLY_PNL_SELECT_STATEMENT => qq(
                from financial_shipment_events so
                join sku_costs sc
                  on so.sku = sc.sku
-                and sc.start_date < so.posted_dt
+                and sc.start_date <= date(so.posted_dt)
                 and (sc.end_date is null or
-                     sc.end_date >= so.posted_dt)
+                     sc.end_date >= date(so.posted_dt))
              group by date_format(so.posted_dt,"%Y")
                       ,date_format(so.posted_dt,"%m")
       ) as sku_activity_by_month

@@ -33,9 +33,9 @@ select a.posted_dt date
         from financial_shipment_events fse
         join sku_costs sc
           on fse.sku = sc.sku
-         and sc.start_date < fse.posted_dt
+         and sc.start_date <= date(fse.posted_dt)
          and (sc.end_date is null or
-              sc.end_date > fse.posted_dt)
+              sc.end_date >= date(fse.posted_dt))
        where posted_dt >= DATE(NOW() - INTERVAL ? DAY)
        group by date_format(posted_dt, "%Y-%m-%d (%a)")
 ) a left outer join (
@@ -83,9 +83,9 @@ select a.mon
         from financial_shipment_events fse
         join sku_costs sc
           on fse.sku = sc.sku
-         and sc.start_date < fse.posted_dt
+         and sc.start_date <= date(fse.posted_dt)
          and (sc.end_date is null or
-              sc.end_date > fse.posted_dt)
+              sc.end_date >= date(fse.posted_dt))
        where posted_dt >= NOW() - INTERVAL ? DAY
 ) a left outer join (
     select mon,
@@ -125,8 +125,8 @@ use constant TOTAL_INVENTORY_COST => qq(
       from realtime_inventory ri
       join sku_costs sc
         on ri.sku = sc.sku
-       and sc.start_date < now()
-       and (sc.end_date is null or sc.end_date > now())
+       and sc.start_date <= curdate()
+       and (sc.end_date is null or sc.end_date >= curdate())
      where ri.quantity_total > 0
 ) ;
 

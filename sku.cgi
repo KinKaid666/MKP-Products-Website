@@ -92,9 +92,8 @@ use constant SKU_PNL_SELECT_STATEMENT => qq(
       from financial_shipment_events so
       join sku_costs sc
         on so.sku = sc.sku
-       and sc.start_date < so.posted_dt
-       and (sc.end_date is null or
-            sc.end_date > so.posted_dt)
+       and sc.start_date <= date(so.posted_dt)
+       and (sc.end_date is null or sc.end_date >= date(so.posted_dt))
      where so.sku = ?
     group by date_format(so.posted_dt,"%Y")
              ,date_format(so.posted_dt,"%m")
@@ -131,9 +130,8 @@ use constant SKU_PRODUCTIVITY_SELECT_STATEMENT => qq(
       from financial_shipment_events so
       join sku_costs sc
         on so.sku = sc.sku
-       and sc.start_date < so.posted_dt
-       and (sc.end_date is null or
-            sc.end_date > so.posted_dt)
+       and sc.start_date <= date(so.posted_dt)
+       and (sc.end_date is null or sc.end_date >= date(so.posted_dt))
       left outer join realtime_inventory ri
         on ri.sku = so.sku
      where so.posted_dt > NOW() - INTERVAL ? DAY
